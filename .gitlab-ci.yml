@@ -19,7 +19,6 @@ pylint:
 
 test:python3.7:
   stage: test
-  extends: ".test"
   allow_failure: false
   script:
     - python -m pip install --upgrade pytest coverage

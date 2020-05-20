@@ -13,6 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://gitlab.com/Reggles44/xbrlassembler",
     include_package_data=True,
+    packages=['xbrlassembler.py'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
