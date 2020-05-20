@@ -9,7 +9,7 @@ default:
   before_script:
     - apt-get update -qy
     - apt-get install -y $PACKAGES
-    - python -m pip install -U requirements.txt
+    - python -m pip install -U -r requirements.txt
     #- export PYTHONPATH="${PYTHONPATH}:./"
 
 pylint:
