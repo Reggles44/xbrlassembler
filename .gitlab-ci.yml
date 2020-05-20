@@ -1,0 +1,38 @@
+stages:
+  - build
+  - test
+  - coverage
+  - deploy
+
+default:
+  image: "python:3.7"
+  before_script:
+    - apt-get update -qy
+    - apt-get install -y $PACKAGES
+    #- export PYTHONPATH="${PYTHONPATH}:./"
+
+pylint:
+  stage: build
+  script:
+    - python -m pip install --upgrade pylint
+    - pylint xbrlassembler -E
+
+test:python3.7:
+  stage: test
+  extends: ".test"
+  allow_failure: false
+  script:
+    - python -m pip install --upgrade pytest coverage
+    - coverage run --source=concurrentevents -m pytest
+    - coverage report -m
+  coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
+
+deploy_pypi:
+  stage: deploy
+  script:
+    - python -m pip install -U twine
+    - python setup.py sdist
+    - twine upload dist/*.tar.gz -u $TWINE_USERNAME -p $TWINE_PASSWORD
+  allow_failure: false
+  only:
+    - master
