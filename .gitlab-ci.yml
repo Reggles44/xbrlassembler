@@ -22,7 +22,7 @@ test:python3.7:
   stage: test
   allow_failure: false
   script:
-    - python -m pip install --upgrade pytest coverage
+    - python -m pip install --upgrade pytest coverage requests
     - coverage run --source=concurrentevents -m pytest
     - coverage report -m
   coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
