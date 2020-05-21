@@ -23,7 +23,7 @@ test:python3.7:
   allow_failure: false
   script:
     - python -m pip install --upgrade pytest coverage requests
-    - coverage run --source=xbrlassembler -m pytest
+    - coverage run --source=xbrlassembler -m pytest tests/
     - coverage report -m
   coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
 
