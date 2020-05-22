@@ -4,7 +4,8 @@ import pandas
 import requests
 from bs4 import BeautifulSoup
 
-from assembler import XBRLAssembler, FinancialStatement
+from xbrlassembler import XBRLAssembler, FinancialStatement
+
 
 def test_main():
     crawler = requests.get('https://www.sec.gov/Archives/edgar/full-index/crawler.idx')
