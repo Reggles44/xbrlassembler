@@ -1,0 +1,1 @@
+from assembler import XBRLType, XBRLAssembler, FinancialStatement
