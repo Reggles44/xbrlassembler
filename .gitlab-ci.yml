@@ -22,7 +22,7 @@ test:python3.7:
   stage: test
   allow_failure: false
   script:
-    - pwd
+    - ls -alt
     - python -m pip install --upgrade pytest coverage requests
     - pytest
     - coverage run --source=xbrlassembler -m pytest
