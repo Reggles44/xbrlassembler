@@ -17,35 +17,44 @@ crawler = requests.get('https://www.sec.gov/Archives/edgar/full-index/crawler.id
 logger = logging.getLogger('xbrlassembler')
 logger.setLevel(logging.ERROR)
 
+test_files = []
+
 
 def test_main():
-    tested = {}
-    with open(file, 'r') as passed:
-        for l in passed.readlines():
-            name, index_url = l.split(', ')
-            tested[index_url.strip()] = name
+    passed = open(file, 'a') if __name__ == '__main__' else None
+    if not test_files:
+        get_files(5)
 
-    with open(file, 'a') as passed:
-        files = []
-        for i in crawler.text.split('\n')[5:]:
-            if '10-k ' in i.lower() or '10-q ' in i.lower():
-                item = re.split('\s{2,}', i)
-                name, url = item[0], item[4]
-                if url not in tested.keys():
-                    files.append((name, url))
-
-        for name, url in files:
-            try:
-                print(name, ' ', end='')
-                parse(name, url)
-                print("PASSED")
+    for i, (name, url) in enumerate(test_files):
+        try:
+            print(name, ' ', end='')
+            parse(name, url)
+            if __name__ == '__main__':
                 passed.write(f'{name.replace(",", "")}, {url}\n')
-            except XBRLIndexError as e:
-                print("Index Error", url)
-            except Exception as e:
-                print("URL", url)
-                #traceback.print_exc()
-                #break
+            print("PASSED")
+        except XBRLIndexError as e:
+            print("Index Error", url)
+        except Exception as e:
+            print("URL", url)
+            #traceback.print_exc()
+
+def get_files(amount=0):
+    tested = {}
+    if __name__ == '__main__':
+        with open(file, 'r') as passed:
+            for l in passed.readlines():
+                name, index_url = l.split(', ')
+                tested[index_url.strip()] = name
+
+    for i, item in enumerate(crawler.text.split('\n')[5:]):
+        if '10-k ' in item.lower() or '10-q ' in item.lower():
+            item = re.split('\s{2,}', item)
+            name, url = item[0], item[4]
+            if url not in tested.keys():
+                test_files.append((name, url))
+
+            if i > amount if amount else False:
+                break
 
 
 def parse(name, url):
@@ -53,15 +62,10 @@ def parse(name, url):
     income_statement = xbrl_assembler.get(FinancialStatement.INCOME_STATEMENT)
     balance_sheet = xbrl_assembler.get(FinancialStatement.BALANCE_SHEET)
 
-    #print("Type Check = ", type(income_statement) == type(balance_sheet) == pandas.DataFrame)
-    #print("Empty Check = ", not income_statement.empty and not balance_sheet.empty)
-
-    #print(income_statement)
-    #print(balance_sheet)
-
     assert type(income_statement) == type(balance_sheet) == pandas.DataFrame
     assert not income_statement.empty and not balance_sheet.empty
 
 
 if __name__ == '__main__':
+    get_files()
     test_main()
