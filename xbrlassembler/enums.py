@@ -51,7 +51,7 @@ class DateParser(Enum):
 
     def re(self):
         """Returns the regex value"""
-        return self.value[0]
+        return list(self.value)[0]
 
     def get_date(self, raw):
         """
@@ -60,7 +60,7 @@ class DateParser(Enum):
         :return: class:`datetime.datetime` with the specified date
         """
         cleaned = re.sub(r'[^0-9A-Za-z]', '', raw)
-        return datetime.strptime(cleaned, self.value[1])
+        return datetime.strptime(cleaned, list(self.value)[1])
 
     @classmethod
     def find_format(cls, string):

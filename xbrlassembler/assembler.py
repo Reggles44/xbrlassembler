@@ -36,8 +36,8 @@ class XBRLElement:
         self.value = value
         self.ref = ref
 
-        self.__children = {}
-        self.__parent = None
+        self._children = {}
+        self._parent = None
 
     def __repr__(self):
         """
@@ -63,23 +63,13 @@ class XBRLElement:
             logger.info(f"order to float to int failed {order}, {e}")
 
         if not isinstance(child, XBRLElement):
-            print(2)
             return
 
-        if child in self.__children:
-            print(3)
+        if child in self._children:
             return
 
-        self.__children[child] = order
-        child.__parent = self
-
-    @property
-    def children(self):
-        return self.__children
-
-    @property
-    def parent(self):
-        return f"{self.__parent}"
+        self._children[child] = order
+        child._parent = self
 
     def to_dict(self):
         """
@@ -88,10 +78,10 @@ class XBRLElement:
         :rtype: dict
         """
         dic = {self.label: []}
-        if all(not child.__children for child in self.__children.keys()):
-            dic[self.label] = [ele for ele in self.__children.keys()]
+        if all(not child._children for child in self._children.keys()):
+            dic[self.label] = [ele for ele in self._children.keys()]
         else:
-            for ele, o in sorted(self.__children.items(), key=lambda item: item[1] or -1):
+            for ele, o in sorted(self._children.items(), key=lambda item: item[1] or -1):
                 dic.update(ele.to_dict())
         return dic
 
@@ -102,8 +92,8 @@ class XBRLElement:
         :rtype: str
         """
         vis = f"\n{self.__repr__()}"
-        if self.__children:
-            for child in self.__children:
+        if self._children:
+            for child in self._children:
                 cvis = child.visualize().replace('\n', '\n\t')
                 vis += cvis
         return vis
@@ -171,10 +161,6 @@ class XBRLAssembler:
         self._docs = self.get_docs()
         self._labels = self.get_labels()
         self._cells = self.get_cells()
-
-        # print("Docs", self._docs)
-        #print("Labels", self._labels)
-        # print("Docs", self._cells)
 
     @classmethod
     def from_sec_index(cls, index_url, ref_doc=XBRLType.PRE):
@@ -359,7 +345,7 @@ class XBRLAssembler:
             raise ValueError(f"No match found for {search} in names.\n\t"
                              f"Names available {[name for name in self._docs.keys()]}]")
 
-        if not doc_ele.children:
+        if not doc_ele._children:
             self.__assemble(doc_ele)
 
         return doc_ele
@@ -400,9 +386,9 @@ class XBRLAssembler:
         # Determine top and bottom level elements in the document and either fill in cells or
         #   link them to the overall document element
         for order, ele in enumerate(eles.values()):
-            if ele.parent and ele.children:
+            if ele._parent and ele._children:
                 continue
-            elif not ele.parent:
+            elif not ele._parent:
                 doc_ele.add_child(child=ele, order=order)
 
             if ele.uri.lower() in self._cells:
