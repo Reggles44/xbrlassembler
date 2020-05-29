@@ -22,11 +22,16 @@ class XBRLCellsError(XBRLError):
     """Exception raised when there is an error with an XBRL cells document"""
 
 
+class XBRLRefDocError(XBRLError):
+    name = "Reference Document"
+    """Exception raised when there is an error with an XBRL reference document"""
+
+
 class XBRLIndexError(XBRLError):
     name = "Index"
     """Exception raised when there is an error with parsing an Index to get XBRL Documents"""
 
 
-class XBRLRefDocError(XBRLError):
-    name = "Reference Document"
-    """Exception raised when there is an error with an XBRL reference document"""
+class XBRLDirectoryError(XBRLError):
+    name = "Directory"
+    """Exception raised when there is an error with parsing a directory to get XBRL Documents"""

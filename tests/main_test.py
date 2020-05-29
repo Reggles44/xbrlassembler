@@ -42,6 +42,9 @@ def parse_files():
         print(exception or "PASSED")
         yield name, url, exception
 
+        if exception:
+            break
+
 
 def parse(url):
     try:
@@ -49,11 +52,18 @@ def parse(url):
         income_statement = xbrl_assembler.get(FinancialStatement.INCOME_STATEMENT)
         balance_sheet = xbrl_assembler.get(FinancialStatement.BALANCE_SHEET)
 
+        print(income_statement.visualize())
+        print(balance_sheet.visualize())
+
+        income_statement = income_statement.to_dataframe()
+        balance_sheet = balance_sheet.to_dataframe()
+
         assert type(income_statement) == type(balance_sheet) == pandas.DataFrame
         assert not income_statement.empty and not balance_sheet.empty
     except XBRLIndexError:
         return None
     except Exception as e:
+        traceback.print_exc()
         return e
 
 
@@ -72,8 +82,14 @@ if __name__ == '__main__':
 
     get_files(tested=tested)
 
+    failed = 0
+
     with open(file, 'a') as passed:
         for name, url, exc in parse_files():
             if not exc:
                 passed.write(f"{name.replace(',', '')}, {url}\n")
+            else:
+                failed += 1
+
+    print("FAILED: ", failed)
 

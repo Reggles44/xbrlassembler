@@ -16,7 +16,9 @@ pip install xbrlassembler
 
 ```python
 from xbrlassembler import XBRLAssembler, FinancialStatement
-assembler = XBRLAssembler(xbrlafiles)
+
+google_index = "https://www.sec.gov/Archives/edgar/data/1652044/0001652044-20-000021-index.htm"
+assembler = XBRLAssembler.from_sec_index(index_url=google_index)
 income_statement = assembler.get(FinancialStatement.INCOME_STATEMENT)
 balance_sheet = assembler.get(FinancialStatement.BALANCE_SHEET)
 ```

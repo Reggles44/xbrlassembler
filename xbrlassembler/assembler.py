@@ -3,67 +3,157 @@ import logging
 import os
 import re
 
-import dateparser
 import pandas
 import requests
 from bs4 import BeautifulSoup
 
-from xbrlassembler.enums import XBRLType, FinancialStatement
-from xbrlassembler.error import XBRLSchemaError, XBRLLabelError, XBRLCellsError, XBRLIndexError, XBRLRefDocError
+from xbrlassembler.enums import XBRLType, FinancialStatement, DateParser
+from xbrlassembler.error import XBRLSchemaError, XBRLLabelError, XBRLCellsError, XBRLIndexError, XBRLRefDocError, \
+    XBRLDirectoryError
 
 logger = logging.getLogger('xbrlassembler')
 
 
 class XBRLElement:
+    """
+    An element to represent a single point on a tree.
+    Specific data values are geared towards xbrl relevent information
+    While relational data is close to that of an XML tree element
+
+    :param uri: A unique identifier for this specific point
+    :type uri: str, int, float, etc.
+    :param label: Printable and readable identifier
+    :type label: str, optional
+    :param value: Data that sits on a specific point, mostly used for elements at the bottem of the tree
+    :type value: int, float, optional
+    :param ref: Reference data that gives context to the value
+    :type ref: str, int, float, datetime, optional
+    """
     def __init__(self, uri, label=None, value=None, ref=None):
+        """Constructor Method"""
         self.uri = uri
         self.label = label
         self.value = value
         self.ref = ref
 
-        self.children = {}
-        self.parent = None
+        self.__children = {}
+        self.__parent = None
 
-    def add_child(self, child, order=None):
-        if not child:
+    def __repr__(self):
+        """
+        :return: Returns a string representation of various aspects of the non relational data
+        """
+        return f"{self.uri} (label={self.label}, value={self.value}, ref={self.ref})"
+
+    def add_child(self, child, order=-1):
+        """
+        Essential function for establishing relationships between elements.
+        This function ensures that the relationship is set on both parent and child
+            elements without duplication or Nones
+
+        :param child: An XBRLElement that is going to be under this element in the tree
+        :type child: class:`xbrlassembler.XBRLElement`
+        :param order: An optional argument to add order to child elements
+        :type order: int, optional
+        :return:
+        """
+        try:
+            order = int(float(order))
+        except Exception as e:
+            logger.info(f"order to float to int failed {order}, {e}")
+
+        if not isinstance(child, XBRLElement):
+            print(2)
             return
 
-        if child in self.children:
+        if child in self.__children:
+            print(3)
             return
 
-        self.children[child] = order
-        child.parent = self
+        self.__children[child] = order
+        child.__parent = self
+
+    @property
+    def children(self):
+        return self.__children
+
+    @property
+    def parent(self):
+        return f"{self.__parent}"
 
     def to_dict(self):
+        """
+        A recursive function to return a dictionary representation of the tree from this point downward
+        :return: A dictionary where keys are labels and cells are bottem level xbrl elements
+        :rtype: dict
+        """
         dic = {self.label: []}
-        if all(not child.children for child in self.children.keys()):
-            dic[self.label] = [ele for ele in self.children.keys()]
+        if all(not child.__children for child in self.__children.keys()):
+            dic[self.label] = [ele for ele in self.__children.keys()]
         else:
-            for ele, o in sorted(self.children.items(), key=lambda item: item[1] or -1):
+            for ele, o in sorted(self.__children.items(), key=lambda item: item[1] or -1):
                 dic.update(ele.to_dict())
         return dic
 
     def visualize(self):
-        vis = f"\n{self.__str__()}"
-        if self.children:
-            for child in self.children:
+        """
+        A function to create a printable representation of the tree from this point
+        :return: A multiline string
+        :rtype: str
+        """
+        vis = f"\n{self.__repr__()}"
+        if self.__children:
+            for child in self.__children:
                 cvis = child.visualize().replace('\n', '\n\t')
                 vis += cvis
         return vis
 
-    def __str__(self):
-        return f"{self.uri} (label={self.label}, value={self.value}, ref={self.ref}, " \
-               f"children={[c.label for c in self.children.keys()]}) "
+    def to_dataframe(self):
+        """
+        A conversion function from a tree to a class:`pandas.Dataframe`
+        :return: A pandas dataframe where the index is labels, columns are ref, and the cells are bottem level values
+        :rtype: class:`pandas.Dataframe`
+        """
+        rows = self.to_dict()
+
+        cols = {}
+        for atr, cells in rows.items():
+            for cell in cells:
+                if cell.ref not in cols.keys() and cell.ref is not None:
+                    cols[cell.ref] = DateParser.parse(cell.ref)
+
+        # Chop off incorrect columns and reformat rows to reflect that
+        for atr, cells in rows.items():
+            rmap = {c.ref: c for c in cells if c.ref in cols}
+
+            row_values = []
+            for col in cols:
+                try:
+                    value = float(rmap[col].value) if col in rmap.keys() else None
+                    row_values.append(value)
+                except (ValueError, TypeError):
+                    logger.info(f"Error parsing {rmap[col].value}")
+            rows[atr] = row_values
+
+        return pandas.DataFrame.from_dict(rows, columns=cols.values(), orient='index', dtype=float)
 
 
 class XBRLAssembler:
+    """
+    The main object to compile XBRL documents into complete sets of data by establishing a tree of information
 
+    Args:
+        :param info: A printable representation of the dataset.
+        :type info: str
+        :param schema: A class:`bs4.BeautifulSoup` for the xbrl schema file
+        :param data: A class:`bs4.BeautifulSoup` for the xbrl data file
+        :param label: A class:`bs4.BeautifulSoup` for the xbrl label file
+        :param ref: A class:`bs4.BeautifulSoup` for the desired xbrl reference file (Defintion, Presetataion, Calculation)
+    """
     uri_re = re.compile(r'(?:lab_)?((us-gaap|source|dei|[a-z]{3,4})[_:][A-Za-z]{5,})', re.IGNORECASE)
-    date_re = re.compile('((2[0-2][0-9]{2}).?(0[1-9]|1[1-2]).?(0[1-9]|[1-2][0-9]|31|30))')
-    date_settings = {'DATE_ORDER': 'YMD', 'PREFER_DATES_FROM': 'past'}
 
     def __init__(self, info, schema, data, label, ref):
-
+        """Constructor Method"""
         self.info = info
 
         for t, name in [(schema, "schema"),
@@ -83,11 +173,21 @@ class XBRLAssembler:
         self._cells = self.get_cells()
 
         # print("Docs", self._docs)
-        # print("Labels", self._labels)
+        #print("Labels", self._labels)
         # print("Docs", self._cells)
 
     @classmethod
     def from_sec_index(cls, index_url, ref_doc=XBRLType.PRE):
+        """
+        Alternative constructor that takes a url as a string and attempts to pull and parse all relevent documents
+
+        :param index_url: A string for a url to an sec index
+        :param ref_doc: An class:`xbrlassembler.XBRLType` to specify the type of reference document
+        :return:
+        """
+        if not index_url.startswith("https://www.sec.gov/Archives/edgar/data/"):
+            raise XBRLIndexError(index_url)
+
         index_soup = BeautifulSoup(requests.get(index_url).text, 'lxml')
 
         data_files_table = index_soup.find('table', {'summary': 'Data Files'})
@@ -109,6 +209,16 @@ class XBRLAssembler:
 
     @classmethod
     def from_dir(cls, directory, ref_doc=XBRLType.PRE):
+        """
+        Alternative constructor that will attempt to search the specific directory for a set of xbrl documents
+
+        :param directory: A string to a directory that will be scanned for xbrl documents
+        :param ref_doc: Optional class`xbrlassembler.XBRLType` used to specify the requested reference document
+        :return:
+        """
+        if not os.path.isdir(directory):
+            raise XBRLDirectoryError(directory)
+
         file_map = {}
         for item in os.listdir(directory):
             if re.search(r'.*\.(xml|xsd)', item):
@@ -121,18 +231,30 @@ class XBRLAssembler:
                    ref=file_map[ref_doc])
 
     def uri(self, raw):
+        """
+        Used to standardize uri's across mutliple documents
+        :param raw: A non standard URI string
+        :type raw: str
+        :return:
+        """
         uri_re = re.search(self.uri_re, raw)
         if uri_re:
             return uri_re.group(1)
         return raw
 
     def get_docs(self):
+        """
+        Parsing function for xbrl schema
+        This establishes the access point for other documents as URI's from this
+            find relevent data in the reference document
+        :return: Dictionary where keys are URI's and values are top level class:`xbrlassembler.XBRLElement`
+        """
         try:
             docs = {}
             for roletype in self.schema.find_all("link:roletype"):
                 uri = roletype['roleuri']
                 label = roletype.find("link:definition").text
-                if "Statement" in label and "Parenthetical" not in label:
+                if "Parenthetical" not in label:  # "Statement" in label and
                     text = label.split(" - ")
                     docs[uri] = XBRLElement(uri=uri, label=text[-1], ref=text[0])
 
@@ -144,6 +266,10 @@ class XBRLAssembler:
             raise XBRLSchemaError(self.info)
 
     def get_labels(self):
+        """
+        Parsing function for xbrl label file to provide readable labels to all elements
+        :return: Dictionary where keys are URI's and values are strings
+        """
         try:
             labels = {}
             label_link = self.label.find(re.compile('.*labellink', re.IGNORECASE))
@@ -152,7 +278,8 @@ class XBRLAssembler:
 
             for lab in label_link.find_all(re.compile('label$')):
                 uri = self.uri(lab['xlink:label']).lower()
-                # print(xlink_label, uri)
+                if uri == lab['xlink:label']:
+                    uri = self.uri(lab['id'])
                 labels[uri] = lab.text
 
             for lab in label_link.find_all(re.compile('loc$')):
@@ -164,6 +291,7 @@ class XBRLAssembler:
                 if uri in labels:
                     continue
 
+                #print(uri, labels[label_uri])
                 labels[uri] = labels[label_uri]
 
             if not labels:
@@ -174,6 +302,10 @@ class XBRLAssembler:
             raise XBRLLabelError(self.info)
 
     def get_cells(self):
+        """
+        Parsing function for the base xml file that has all bottem level tree elements
+        :return: A dict of low level xbrl data that is accessable through uri key
+        """
         try:
             cells = collections.defaultdict(list)
 
@@ -181,15 +313,11 @@ class XBRLAssembler:
 
                 uri = node.name.replace(':', '_')
 
-                ref = []
-                for re_date in re.findall(self.date_re, node['contextref']):
-                    date = dateparser.parse(re_date[0], settings=self.date_settings)
-                    ref.append(date)
-                ref = tuple(ref) if len(ref) > 1 else (*ref, None)
+
 
                 ele = XBRLElement(uri=uri,
                                   value=node.text,
-                                  ref=ref)
+                                  ref=node['contextref'])
 
                 cells[uri].append(ele)
 
@@ -199,12 +327,25 @@ class XBRLAssembler:
         except AttributeError:
             raise XBRLCellsError(self.info)
 
-    def find_doc(self, search):
+    def find_doc(self, search_func):
+        """
+        A sorted search function for specific top level class:`xbrlassembler.XBRLElement` base on uri or label
+        :param search_func: Function returning a bool to determine search method
+        :return: Top level XBRLElement to create a tree under
+        """
         for uri, ele in sorted(self._docs.items(), key=lambda item: item[1].ref):
-            if search(uri):
+            if search_func(uri) or search_func(ele.label):
                 return ele
 
-    def get(self, search):
+    def get(self, search) -> XBRLElement:
+        """
+        Main access function that will take a variety of search criteria and attempt to create and
+            return the document tree relevent to the search
+
+        :param search: Regex, string, or FinancialStatement enum to search with
+        :type search: str, class:`re.Pattern`, class:`xbrlassembler.FinancialStatement`
+        :return: class:`xbrlassembler.XBRLElement` for the top of a tree representing the requested document
+        """
         if isinstance(search, re.Pattern):
             doc_ele = self.find_doc(lambda name: re.search(search, name))
         elif isinstance(search, str):
@@ -221,11 +362,15 @@ class XBRLAssembler:
         if not doc_ele.children:
             self.__assemble(doc_ele)
 
-        return self.__dataframe(doc_ele)
+        return doc_ele
 
     def __assemble(self, doc_ele):
+        """
+        Private function used to create the tree under a specific class:`xbrlassembler.XBRLElement`
+        :param doc_ele: The top level XBRLElement
+        """
         # Find desired section in reference document
-        def_link = self.ref.find(re.compile(r'\w*link', re.IGNORECASE), attrs={'xlink:role': doc_ele.uri})
+        def_link = self.ref.find(re.compile(r'link', re.IGNORECASE), attrs={'xlink:role': doc_ele.uri})
         if not def_link:
             raise XBRLRefDocError(self.info)
 
@@ -235,14 +380,22 @@ class XBRLAssembler:
             uri = loc['xlink:href'].split('#')[1]
             label = self._labels[uri.lower()] if uri.lower() in self._labels else None
             ele = XBRLElement(uri=uri, label=label)
-            # print(ele)
             eles[loc['xlink:label']] = ele
 
         # Find and create parent/child relationships between new elements
         for arc in def_link.find_all(re.compile(r'\w*arc', re.IGNORECASE)):
             parent, child, order = eles[arc['xlink:from']], eles[arc['xlink:to']], arc['order']
             parent.add_child(child=child, order=order)
-            # print(parent)
+
+        # Remove columns that are not used
+        cols = collections.defaultdict(int)
+        for ele in eles.values():
+            if ele.uri.lower() in self._cells:
+                for cell in self._cells[ele.uri.lower()]:
+                    cols[cell.ref] += 1
+
+        least_used = max(cols.values())
+        cols = set([c for c, count in cols.items() if count == least_used])
 
         # Determine top and bottom level elements in the document and either fill in cells or
         #   link them to the overall document element
@@ -254,35 +407,6 @@ class XBRLAssembler:
 
             if ele.uri.lower() in self._cells:
                 for cell in self._cells[ele.uri.lower()]:
-                    ele.add_child(cell)
+                    if cell.ref in cols:
+                        ele.add_child(cell)
                     # print(ele)
-
-    @staticmethod
-    def __dataframe(doc_ele):
-        rows = doc_ele.to_dict()
-
-        # print(doc_ele.visualize())
-
-        cols = collections.defaultdict(int)
-        for atr, cells in rows.items():
-            for c in cells:
-                if c.ref:
-                    cols[c.ref] += 1
-
-        # Remove columns that are not used typically
-        cols = set([c for c, count in cols.items() if count > 2])
-
-        # Chop off incorrect columns and reformat rows to reflect that
-        for atr, cells in rows.items():
-            rmap = {c.ref: c for c in cells if c.ref in cols}
-
-            row_values = []
-            for col in cols:
-                try:
-                    value = float(rmap[col].value) if col in rmap.keys() else None
-                    row_values.append(value)
-                except ValueError:
-                    logger.info(f"Error parsing {rmap[col].value}")
-            rows[atr] = row_values
-
-        return pandas.DataFrame.from_dict(rows, columns=cols, orient='index', dtype=float)
