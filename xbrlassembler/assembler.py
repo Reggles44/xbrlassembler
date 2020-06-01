@@ -20,14 +20,17 @@ class XBRLElement:
     Specific data values are geared towards xbrl relevent information
     While relational data is close to that of an XML tree element
 
-    :param uri: A unique identifier for this specific point
-    :type uri: str, int, float, etc.
-    :param label: Printable and readable identifier
-    :type label: str, optional
-    :param value: Data that sits on a specific point, mostly used for elements at the bottem of the tree
-    :type value: int, float, optional
-    :param ref: Reference data that gives context to the value
-    :type ref: str, int, float, datetime, optional
+    Args:
+        :param uri: A unique identifier for this specific point
+        :type uri: str, int, float, etc.
+
+    Kwargs:
+        :param label: Printable and readable identifier
+        :type label: str, optional
+        :param value: Data that sits on a specific point, mostly used for elements at the bottem of the tree
+        :type value: int, float, optional
+        :param ref: Reference data that gives context to the value
+        :type ref: str, int, float, datetime, optional
     """
     def __init__(self, uri, label=None, value=None, ref=None):
         """Constructor Method"""
@@ -51,11 +54,11 @@ class XBRLElement:
         This function ensures that the relationship is set on both parent and child
             elements without duplication or Nones
 
-        :param child: An XBRLElement that is going to be under this element in the tree
-        :type child: class:`xbrlassembler.XBRLElement`
-        :param order: An optional argument to add order to child elements
-        :type order: int, optional
-        :return:
+        Args:
+            :param child: An XBRLElement that is going to be under this element in the tree
+            :type child: class:`xbrlassembler.XBRLElement`
+            :param order: An optional argument to add order to child elements
+            :type order: int, optional
         """
         try:
             order = int(float(order))
@@ -167,9 +170,13 @@ class XBRLAssembler:
         """
         Alternative constructor that takes a url as a string and attempts to pull and parse all relevent documents
 
-        :param index_url: A string for a url to an sec index
-        :param ref_doc: An class:`xbrlassembler.XBRLType` to specify the type of reference document
-        :return:
+        Args:
+            :param index_url: A string for a url to an sec index
+
+        Kwargs:
+            :param ref_doc: An class:`xbrlassembler.XBRLType` to specify the type of reference document
+
+        :return: A class:`xbrlassembler.XBRLAssembler`
         """
         if not index_url.startswith("https://www.sec.gov/Archives/edgar/data/"):
             raise XBRLIndexError(index_url)
@@ -198,9 +205,12 @@ class XBRLAssembler:
         """
         Alternative constructor that will attempt to search the specific directory for a set of xbrl documents
 
-        :param directory: A string to a directory that will be scanned for xbrl documents
-        :param ref_doc: Optional class`xbrlassembler.XBRLType` used to specify the requested reference document
-        :return:
+        Args:
+            :param directory: A string to a directory that will be scanned for xbrl documents
+
+        Kwargs:
+            :param ref_doc: Optional class`xbrlassembler.XBRLType` used to specify the requested reference document
+        :return: A class:`xbrlassembler.XBRLAssembler`
         """
         if not os.path.isdir(directory):
             raise XBRLDirectoryError(directory)
@@ -351,10 +361,6 @@ class XBRLAssembler:
         return doc_ele
 
     def __assemble(self, doc_ele):
-        """
-        Private function used to create the tree under a specific class:`xbrlassembler.XBRLElement`
-        :param doc_ele: The top level XBRLElement
-        """
         # Find desired section in reference document
         def_link = self.ref.find(re.compile(r'link', re.IGNORECASE), attrs={'xlink:role': doc_ele.uri})
         if not def_link:

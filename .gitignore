@@ -3,4 +3,4 @@
 .pytest_cache
 /.coverage
 /tests/parse_success.csv
-/tests/parse_success.csv
+/docs/build/
