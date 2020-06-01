@@ -1,6 +1,7 @@
 # XBRL Assembler
 [![pipeline status](https://gitlab.com/Reggles44/xbrlassembler/badges/master/pipeline.svg)](https://gitlab.com/Reggles44/xbrlassembler/-/commits/master)
 [![coverage report](https://gitlab.com/Reggles44/xbrlassembler/badges/master/coverage.svg)](https://gitlab.com/Reggles44/xbrlassembler/-/commits/master)
+[![Documentation Status](https://readthedocs.org/projects/xbrlassembler/badge/?version=latest)](https://xbrlassembler.readthedocs.io/en/latest/?badge=latest)
 
 ``XBRLAssembelr`` is a parsing library for putting xbrldocuments from the sec together into ``pandas.Dataframe``.
 
