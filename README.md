@@ -55,3 +55,5 @@ XBRLElement.to_dataframe() creates a pandas.Dataframe out of the tree
 print(income_statement.visualize())
 income_dataframe = income_statement.to_dataframe()
 ```
+
+Additional documentation for specific functions and errors can be found at, https://xbrlassembler.rtfd.io.
