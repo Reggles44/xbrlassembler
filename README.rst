@@ -10,7 +10,7 @@ XBRL Assembler
 
 .. image:: https://readthedocs.org/projects/xbrlassembler/badge/?version=latest
     :alt: Documentation Status
-    :target: https://xbrlassembler.readthedocs.io/en/latest/?badge=latest
+    :target: https://xbrlassembler.readthedocs.io/
 
 ``XBRLAssembelr`` is a parsing library for putting xbrldocuments from the sec together into ``pandas.Dataframe``.
 
@@ -19,9 +19,9 @@ Installation
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install XBRLAssembler.
 
-```bash
-pip install xbrlassembler
-```
+.. code-block::bash
+
+    pip install xbrlassembler
 
 Usage
 -----
