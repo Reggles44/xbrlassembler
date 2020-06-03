@@ -17,11 +17,11 @@ XBRL Assembler
 Installation
 ------------
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install XBRLAssembler.
+Use the package manager pip to install XBRLAssembler.
 
 .. code-block::bash
 
-    pip install xbrlassembler
+    python -m pip install xbrlassembler
 
 Usage
 -----
