@@ -58,7 +58,6 @@ Search for specific documents but the buildin enum, regex, or string.
     income_statment = assembler.get(FinancialStatement.INCOME_STATEMENT)
     income_statment = assembler.get(re.compile(r'Income Statment'))
     income_statment = assembler.get('Income Statement')
-    ```
 
 Get returns an XBRLElement which can be swapped into better forms.
 XBRLElement.visualize() will return a multiline string containing all data under that node.
