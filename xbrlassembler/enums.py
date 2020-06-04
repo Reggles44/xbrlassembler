@@ -28,12 +28,6 @@ class XBRLType(Enum):
         :param item:
         :return:
         """
-        if isinstance(item, cls):
-            return item
-
-        if not isinstance(item, str):
-            return
-
         item = item.lower()
         for xbrl_type in cls:
             if any([t.lower() in item for t in xbrl_type.value[0]]):
@@ -81,9 +75,6 @@ class DateParser(Enum):
         :param string: Raw string that might include dates
         :return: Tuple of class:`datetime.datetime` objects found
         """
-        if not isinstance(string, str):
-            return
-
         date_re = cls.find_format(string)
         if not date_re:
             return
