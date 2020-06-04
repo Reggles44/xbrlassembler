@@ -29,4 +29,7 @@ def test_files():
     assert income_statement._children and balance_sheet._children
     assert type(income_statement.to_dataframe()) == type(balance_sheet.to_dataframe()) == pandas.DataFrame
     assert type(income_statement.to_dict()) == type(balance_sheet.to_dict()) == dict
+    assert '\n' in income_statement.visualize() and '\n' in balance_sheet.visualize()
+
+    os.remove(directory)
 

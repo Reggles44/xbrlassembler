@@ -60,15 +60,16 @@ class XBRLElement:
             :param order: An optional argument to add order to child elements
             :type order: int, optional
         """
-        try:
-            order = int(float(order))
-        except Exception as e:
-            logger.info(f"order to float to int failed {order}, {e}")
-
         if not isinstance(child, XBRLElement):
             return
 
         if child in self._children:
+            return
+
+        try:
+            order = int(float(order))
+        except Exception as e:
+            logger.info(f"order to float to int failed {order}, {e}")
             return
 
         self._children[child] = order
@@ -287,7 +288,6 @@ class XBRLAssembler:
                 if uri in labels:
                     continue
 
-                #print(uri, labels[label_uri])
                 labels[uri] = labels[label_uri]
 
             if not labels:
@@ -306,15 +306,10 @@ class XBRLAssembler:
             cells = collections.defaultdict(list)
 
             for node in self.data.find_all(attrs={"contextref": True}):
-
                 uri = node.name.replace(':', '_')
-
-
-
                 ele = XBRLElement(uri=uri,
                                   value=node.text,
                                   ref=node['contextref'])
-
                 cells[uri].append(ele)
 
             if not cells:
