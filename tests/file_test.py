@@ -1,5 +1,6 @@
 import os
 
+import pandas
 import requests
 from bs4 import BeautifulSoup
 
@@ -26,3 +27,6 @@ def test_files():
 
     assert type(income_statement) == type(balance_sheet) == XBRLElement
     assert income_statement._children and balance_sheet._children
+    assert type(income_statement.to_dataframe()) == type(balance_sheet.to_dataframe()) == pandas.Dataframe
+    assert type(income_statement.to_dict()) == type(balance_sheet.to_dict()) == dict
+
