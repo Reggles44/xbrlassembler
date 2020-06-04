@@ -8,7 +8,7 @@ import pandas
 import requests
 from bs4 import BeautifulSoup
 
-from xbrlassembler import XBRLAssembler, FinancialStatement, XBRLError
+from xbrlassembler import XBRLAssembler, FinancialStatement, XBRLError, XBRLElement
 from xbrlassembler.error import XBRLIndexError
 
 file = os.path.join(os.getcwd(), 'parse_success.csv')
@@ -52,14 +52,8 @@ def parse(url):
         income_statement = xbrl_assembler.get(FinancialStatement.INCOME_STATEMENT)
         balance_sheet = xbrl_assembler.get(FinancialStatement.BALANCE_SHEET)
 
-        print(income_statement.visualize())
-        print(balance_sheet.visualize())
-
-        income_statement = income_statement.to_dataframe()
-        balance_sheet = balance_sheet.to_dataframe()
-
-        assert type(income_statement) == type(balance_sheet) == pandas.DataFrame
-        assert not income_statement.empty and not balance_sheet.empty
+        assert type(income_statement) == type(balance_sheet) == XBRLElement
+        assert income_statement._children and balance_sheet._children
     except XBRLIndexError:
         return None
     except Exception as e:
@@ -67,7 +61,7 @@ def parse(url):
         return e
 
 
-def test_main():
+def test_index():
     for name, url, exc in parse_files():
         if exc:
             raise exc
