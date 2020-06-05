@@ -54,7 +54,7 @@ class DateParser(Enum):
         :param date_pattern: A datetime string format
         :return: A regex compile of the assembled term
         """
-        re_list = [self._re_map.value[f'%{char}'] for char in self.value.split('%') if char]
+        re_list = [self._re_map.value[f'%{char}'] for char in str(self.value).split('%') if char]
         return re.compile(fr"({'.?'.join(re_list)})")
 
     def get_date(self, raw):
