@@ -2,7 +2,7 @@ from xbrlassembler import XBRLAssembler, FinancialStatement
 
 
 def test_assembler():
-    url = "https://www.sec.gov/Archives/edgar/data/1141807/0001141807-20-000011-index.htm"
+    url = "https://www.sec.gov/Archives/edgar/data/38723/0001376474-20-000115-index.htm"
 
     xbrl_assembler = XBRLAssembler.from_sec_index(url)
     income_statement = xbrl_assembler.get(FinancialStatement.INCOME_STATEMENT)
