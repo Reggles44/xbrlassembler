@@ -35,6 +35,7 @@ class XBRLType(Enum):
 
 
 _re_map = {'%Y': r'(2[0-2][0-9]{2})',
+           '%y': r'[0-9]{2}',
            '%m': r'(0[1-9]|1[1-2])',
            '%d': r'(0[1-9]|[1-2][0-9]|31|30)',
            '%b': r'[a-z]{3}'}
@@ -49,6 +50,7 @@ class DateParser(Enum):
         allow for parsing strings into datetime objects
     """
     YEAR_MONTH_DAY = '%Y%m%d'
+    YEAR_HALF_MONTH_DAY = '%y%m%d'
     MONTH_DAY_YEAR = '%m%d%Y'
     MONTH_STRING_DAY_YEAR = '%b%d%Y'
 
@@ -77,9 +79,7 @@ class DateParser(Enum):
         :param string: Raw date string to match to a parser
         :return: class:`xbrlassembler.DateParser` matching the string
         """
-        for datetype in [cls.YEAR_MONTH_DAY,
-                         cls.MONTH_DAY_YEAR,
-                         cls.MONTH_STRING_DAY_YEAR]:
+        for datetype in cls:
             if re.search(datetype.pattern(), string):
                 return datetype
 
