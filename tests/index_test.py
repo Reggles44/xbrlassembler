@@ -54,6 +54,9 @@ def parse(url):
 
         assert type(income_statement) == type(balance_sheet) == XBRLElement
         assert income_statement._children and balance_sheet._children
+
+        print(income_statement.to_dataframe())
+        print(balance_sheet.to_dataframe())
     except XBRLIndexError:
         return None
     except Exception as e:
@@ -84,6 +87,7 @@ if __name__ == '__main__':
                 passed.write(f"{name.replace(',', '')}, {url}\n")
             else:
                 failed += 1
+            input()
 
     print("FAILED: ", failed)
 

@@ -39,13 +39,23 @@ class DateParser(Enum):
     Functional enum that ties together regex with datetime format strings to
         allow for parsing strings into datetime objects
     """
+    _re_map = {'%Y': r'(2[0-2][0-9]{2})',
+               '%m': r'(0[1-9]|1[1-2])',
+               '%d': r'(0[1-9]|[1-2][0-9]|31|30)',
+               '%b': r'[a-z]{3}'}
 
-    YEAR_MONTH_DAY = re.compile(r'((2[0-2][0-9]{2}).?(0[1-9]|1[1-2]).?(0[1-9]|[1-2][0-9]|31|30))'), '%Y%m%d'
-    MONTH_DAY_YEAR = re.compile(r'([a-z]{3}.?(0[1-9]|[1-2][0-9]|31|30).?(2[0-2][0-9]{2}))', re.IGNORECASE), '%b%d%Y'
+    YEAR_MONTH_DAY = '%Y%m%d'
+    MONTH_DAY_YEAR = '%m%d%Y'
+    MONTH_STRING_DAY_YEAR = '%b%d%Y'
 
-    def re(self):
-        """Returns the regex value"""
-        return list(self.value)[0]
+    def pattern(self):
+        """
+        Creates a regex pattern based on a datetime string format
+        :param date_pattern: A datetime string format
+        :return: A regex compile of the assembled term
+        """
+        re_list = [self._re_map.value[f'%{char}'] for char in self.value.split('%') if char]
+        return re.compile(fr"({'.?'.join(re_list)})")
 
     def get_date(self, raw):
         """
@@ -54,7 +64,7 @@ class DateParser(Enum):
         :return: class:`datetime.datetime` with the specified date
         """
         cleaned = re.sub(r'[^0-9A-Za-z]', '', raw)
-        return datetime.strptime(cleaned, list(self.value)[1])
+        return datetime.strptime(cleaned, self.value)
 
     @classmethod
     def find_format(cls, string):
@@ -63,8 +73,10 @@ class DateParser(Enum):
         :param string: Raw date string to match to a parser
         :return: class:`xbrlassembler.DateParser` matching the string
         """
-        for datetype in cls:
-            if re.search(datetype.value[0], string):
+        for datetype in [cls.YEAR_MONTH_DAY,
+                         cls.MONTH_DAY_YEAR,
+                         cls.MONTH_STRING_DAY_YEAR]:
+            if re.search(datetype.pattern(), string):
                 return datetype
 
     @classmethod
@@ -77,6 +89,6 @@ class DateParser(Enum):
         """
         date_re = cls.find_format(string)
         if not date_re:
-            return
+            return (string,)
 
-        return tuple([date_re.get_date(raw_date[0]) for raw_date in re.findall(date_re.re(), string)])
+        return tuple([date_re.get_date(raw_date[0]) for raw_date in re.findall(date_re.pattern(), string)])
