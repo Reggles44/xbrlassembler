@@ -34,16 +34,20 @@ class XBRLType(Enum):
                 return xbrl_type
 
 
+_re_map = {'%Y': r'(2[0-2][0-9]{2})',
+           '%m': r'(0[1-9]|1[1-2])',
+           '%d': r'(0[1-9]|[1-2][0-9]|31|30)',
+           '%b': r'[a-z]{3}'}
+_quarter_map = {'Q1': '0331',
+                'Q2': '0630',
+                'Q3': '0930',
+                'Q4': '1231'}
+
 class DateParser(Enum):
     """
     Functional enum that ties together regex with datetime format strings to
         allow for parsing strings into datetime objects
     """
-    _re_map = {'%Y': r'(2[0-2][0-9]{2})',
-               '%m': r'(0[1-9]|1[1-2])',
-               '%d': r'(0[1-9]|[1-2][0-9]|31|30)',
-               '%b': r'[a-z]{3}'}
-
     YEAR_MONTH_DAY = '%Y%m%d'
     MONTH_DAY_YEAR = '%m%d%Y'
     MONTH_STRING_DAY_YEAR = '%b%d%Y'
@@ -54,7 +58,7 @@ class DateParser(Enum):
         :param date_pattern: A datetime string format
         :return: A regex compile of the assembled term
         """
-        re_list = [self._re_map.value[f'%{char}'] for char in str(self.value).split('%') if char]
+        re_list = [_re_map[f'%{char}'] for char in str(self.value).split('%') if char]
         return re.compile(fr"({'.?'.join(re_list)})")
 
     def get_date(self, raw):
@@ -87,6 +91,9 @@ class DateParser(Enum):
         :param string: Raw string that might include dates
         :return: Tuple of class:`datetime.datetime` objects found
         """
+        for qtr, month_day in _quarter_map.items():
+            string = string.replace(qtr, month_day)
+
         date_re = cls.find_format(string)
         if not date_re:
             return (string,)
