@@ -1,10 +1,10 @@
 import os
 
-import pandas
 import requests
 from bs4 import BeautifulSoup
 
-from xbrlassembler import XBRLAssembler, FinancialStatement, XBRLElement
+from tests import assembler_test
+from xbrlassembler import XBRLAssembler
 
 
 def test_files():
@@ -21,12 +21,5 @@ def test_files():
         with open(os.path.abspath(os.path.join(directory, file_name)), 'w+') as file:
             file.write(requests.get(link).text)
 
-    xbrl_assembler = XBRLAssembler.from_dir(directory=directory)
-    income_statement = xbrl_assembler.get(FinancialStatement.INCOME_STATEMENT)
-    balance_sheet = xbrl_assembler.get(FinancialStatement.BALANCE_SHEET)
+    assembler_test(XBRLAssembler.from_dir(directory=directory))
 
-    assert type(income_statement) == type(balance_sheet) == XBRLElement
-    assert income_statement._children and balance_sheet._children
-    assert type(income_statement.to_dataframe()) == type(balance_sheet.to_dataframe()) == pandas.DataFrame
-    assert type(income_statement.to_dict()) == type(balance_sheet.to_dict()) == dict
-    assert '\n' in income_statement.visualize() and '\n' in balance_sheet.visualize()

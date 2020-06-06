@@ -3,7 +3,6 @@ import logging
 import os
 import re
 
-import pandas
 import requests
 from bs4 import BeautifulSoup
 
@@ -42,6 +41,8 @@ class XBRLElement:
         self._children = {}
         self._parent = None
 
+        self._dict_repr = {}
+
     def __repr__(self):
         """
         :return: Returns a string representation of various aspects of the non relational data
@@ -75,21 +76,7 @@ class XBRLElement:
         self._children[child] = order
         child._parent = self
 
-    def to_dict(self):
-        """
-        A recursive function to return a dictionary representation of the tree from this point downward
-        :return: A dictionary where keys are labels and cells are bottem level xbrl elements
-        :rtype: dict
-        """
-        dic = {self.label: []}
-        if all(not child._children for child in self._children.keys()):
-            dic[self.label] = [ele for ele in self._children.keys()]
-        else:
-            for ele, o in sorted(self._children.items(), key=lambda item: item[1] or -1):
-                dic.update(ele.to_dict())
-        return dic
-
-    def visualize(self):
+    def visualize(self) -> str:
         """
         A function to create a printable representation of the tree from this point
         :return: A multiline string
@@ -102,34 +89,30 @@ class XBRLElement:
                 vis += cvis
         return vis
 
-    def to_dataframe(self):
+    def references(self) -> dict:
         """
-        A conversion function from a tree to a class:`pandas.Dataframe`
-        :return: A pandas dataframe where the index is labels, columns are ref, and the cells are bottem level values
-        :rtype: class:`pandas.Dataframe`
+        A quick utility function to pull and parse all bottom level references in the tree
+        :return: A dict mapping old references to parsed ones
         """
-        rows = self.to_dict()
-
-        cols = {}
-        for atr, cells in rows.items():
+        refs = {}
+        for atr, cells in self.to_dict().items():
             for cell in cells:
-                if cell.ref not in cols.keys() and cell.ref is not None:
-                    cols[cell.ref] = DateParser.parse(cell.ref)
+                if cell.ref not in refs.keys() and cell.ref is not None:
+                    refs[cell.ref] = DateParser.parse(cell.ref)
+        return refs
 
-        # Chop off incorrect columns and reformat rows to reflect that
-        for atr, cells in rows.items():
-            rmap = {c.ref: c for c in cells if c.ref in cols}
-
-            row_values = []
-            for col in cols:
-                try:
-                    value = float(rmap[col].value) if col in rmap.keys() else None
-                    row_values.append(value)
-                except (ValueError, TypeError):
-                    logger.info(f"Error parsing {rmap[col].value}")
-            rows[atr] = row_values
-
-        return pandas.DataFrame.from_dict(rows, columns=cols.values(), orient='index', dtype=float)
+    def to_dict(self) -> dict:
+        """
+        A recursive function to return a dictionary representation of the tree from this point downward
+        :return: A dictionary where keys are labels and cells are bottem level xbrl elements
+        """
+        dic = {self.label: []}
+        if all(not child._children for child in self._children.keys()):
+            dic[self.label] = [ele for ele in self._children.keys()]
+        else:
+            for ele, o in sorted(self._children.items(), key=lambda item: item[1] or -1):
+                dic.update(ele.to_dict())
+        return dic
 
 
 class XBRLAssembler:
