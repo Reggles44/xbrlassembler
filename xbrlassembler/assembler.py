@@ -67,6 +67,12 @@ class XBRLElement:
         if child in self._children:
             return
 
+        for already_child in self._children:
+            if (already_child.ref == child.ref and
+                    already_child.value == child.value and
+                    already_child.label == child.label):
+                return
+
         try:
             order = int(float(order))
         except Exception as e:
