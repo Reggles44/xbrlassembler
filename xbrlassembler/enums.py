@@ -12,14 +12,14 @@ class FinancialStatement(Enum):
 class XBRLType(Enum):
     """A functional enum for categorizing XBRL documents into their respective use cases"""
     # Choose One
-    CALC = ("CAL",), "calculation"
-    DEF = ("DEF",), "definition"
-    PRE = ("PRE",), "presentation"
+    CALC = ("cal",)
+    DEF = ("def",)
+    PRE = ("pre",)
 
     # Required
-    LAB = ("LAB",), None
-    SCHEMA = ("SCH", "XSD"), None
-    DATA = ("XML", "INS"), None
+    LAB = ("lab",)
+    SCHEMA = ("sch", "xsd")
+    DATA = ("xml", "ins")
 
     @classmethod
     def get(cls, item):
@@ -28,9 +28,9 @@ class XBRLType(Enum):
         :param item:
         :return:
         """
-        item = item.lower()
+        item_ref = item.lower()[-7:]
         for xbrl_type in cls:
-            if any([t.lower() in item for t in xbrl_type.value[0]]):
+            if any(t in item_ref for t in xbrl_type.value):
                 return xbrl_type
 
 

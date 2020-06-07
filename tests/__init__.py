@@ -1,7 +1,33 @@
+import os
 from collections import Iterable
 from datetime import datetime
 
+import requests
+from bs4 import BeautifulSoup
+
 from xbrlassembler import XBRLElement, FinancialStatement
+
+directory = os.path.abspath(os.path.join(os.getcwd(), 'test files'))
+os.makedirs(directory, exist_ok=True)
+
+
+def delete_dir():
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
+
+def save_index(index_url):
+    delete_dir()
+    index_soup = BeautifulSoup(requests.get(index_url).text, 'lxml')
+
+    for row in index_soup.find('table', {'summary': 'Data Files'})('tr')[1:]:
+        row = row.find_all('td')
+        link = "https://www.sec.gov" + row[2].find('a')['href']
+        file_name = link.rsplit('/', 1)[1]
+        with open(os.path.abspath(os.path.join(directory, file_name)), 'w+') as file:
+            file.write(requests.get(link).text)
 
 
 def assembler_test(xbrl_assembler):
