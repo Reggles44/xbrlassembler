@@ -3,6 +3,6 @@ from xbrlassembler import XBRLAssembler, FinancialStatement
 
 
 def test_assembler():
-    url = "https://www.sec.gov/Archives/edgar/data/38723/0001376474-20-000115-index.htm"
+    url = "https://www.sec.gov/Archives/edgar/data/775057/0001445866-20-000590-index.htm"
 
     assembler_test(XBRLAssembler.from_sec_index(url))
