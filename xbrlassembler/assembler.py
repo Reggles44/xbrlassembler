@@ -35,8 +35,13 @@ class XBRLElement:
         """Constructor Method"""
         self.uri = uri
         self.label = label
-        self.value = value
         self.ref = ref
+
+        try:
+            self.value = float(value)
+        except (TypeError, ValueError):
+            logger.info(f"XBRLElement value convert to float failure for {value}")
+            self.value = value
 
         self._children = {}
         self._parent = None
@@ -47,7 +52,7 @@ class XBRLElement:
         """
         :return: Returns a string representation of various aspects of the non relational data
         """
-        return f"{self.uri} (label={self.label}, value={self.value}, ref={self.ref})"
+        return f"{self.uri} (label={self.label}, value={self.value}, {type(self.value)}, ref={self.ref})"
 
     def add_child(self, child, order=-1):
         """
