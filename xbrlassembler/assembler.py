@@ -37,6 +37,7 @@ class XBRLElement:
         self.label = label
         self.ref = ref
 
+        # Convert to float to remove any issues with comparing string representations of numbers
         try:
             self.value = float(value)
         except (TypeError, ValueError):
@@ -46,13 +47,11 @@ class XBRLElement:
         self._children = {}
         self._parent = None
 
-        self._dict_repr = {}
-
     def __repr__(self):
         """
         :return: Returns a string representation of various aspects of the non relational data
         """
-        return f"{self.uri} (label={self.label}, value={self.value}, {type(self.value)}, ref={self.ref})"
+        return f"{self.uri} (label={self.label}, value={self.value}, ref={self.ref})"
 
     def add_child(self, child, order=-1):
         """
@@ -73,9 +72,8 @@ class XBRLElement:
             return
 
         for already_child in self._children:
-            if (already_child.ref == child.ref and
-                    already_child.value == child.value and
-                    already_child.label == child.label):
+            if already_child.uri == child.uri and already_child.ref == child.ref:
+                self.merge(child)
                 return
 
         try:
@@ -86,6 +84,27 @@ class XBRLElement:
 
         self._children[child] = order
         child._parent = self
+
+    def merge(self, other):
+        """
+        Attempts to merge one XBRLElement with another resulting in one element with more complete information
+        :param other: An `XBRLElement` to be absorbed
+        :return:
+        """
+        if not isinstance(other, XBRLElement):
+            return
+
+        if self.label is None and other.label is not None:
+            self.label = other.label
+
+        if self.value is None and other.value is not None:
+            self.value = other.value
+
+        if self._parent is None and other._parent is not None:
+            self._parent = other._parent
+
+        for new_child, order in other._children.items():
+            self.add_child(new_child, order)
 
     def visualize(self) -> str:
         """
@@ -375,19 +394,16 @@ class XBRLAssembler:
                 for cell in self._cells[ele.uri.lower()]:
                     cols[cell.ref] += 1
 
-        least_used = max(cols.values())
-        cols = set([c for c, count in cols.items() if count == least_used])
+        most_used = max(cols.values())
+        cols = set([c for c, count in cols.items() if count == most_used])
 
         # Determine top and bottom level elements in the document and either fill in cells or
         #   link them to the overall document element
         for order, ele in enumerate(eles.values()):
-            if ele._parent and ele._children:
-                continue
-            elif not ele._parent:
+            if ele._parent is None:
                 doc_ele.add_child(child=ele, order=order)
 
             if ele.uri.lower() in self._cells:
                 for cell in self._cells[ele.uri.lower()]:
                     if cell.ref in cols:
                         ele.add_child(cell)
-                    # print(ele)
