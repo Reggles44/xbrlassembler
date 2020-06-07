@@ -231,7 +231,6 @@ class XBRLAssembler:
 
         file_map = {}
         for item in os.listdir(directory):
-            print(item)
             if re.search(r'.*\.(xml|xsd)', item):
                 file_map[XBRLType.get(item)] = BeautifulSoup(open(os.path.join(directory, item), 'r'), 'lxml')
 
