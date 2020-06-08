@@ -7,8 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from xbrlassembler.enums import XBRLType, FinancialStatement, DateParser
-from xbrlassembler.error import XBRLSchemaError, XBRLLabelError, XBRLCellsError, XBRLIndexError, XBRLRefDocError, \
-    XBRLDirectoryError
+from xbrlassembler.error import XBRLError
 
 logger = logging.getLogger('xbrlassembler')
 
@@ -193,14 +192,14 @@ class XBRLAssembler:
         :return: A class:`xbrlassembler.XBRLAssembler`
         """
         if not index_url.startswith("https://www.sec.gov/Archives/edgar/data/"):
-            raise XBRLIndexError(index_url)
+            raise XBRLError(f"{index_url} is not a url for an SEC index")
 
         index_soup = BeautifulSoup(requests.get(index_url).text, 'lxml')
 
         data_files_table = index_soup.find('table', {'summary': 'Data Files'})
 
         if not data_files_table:
-            raise XBRLIndexError(index_url)
+            raise XBRLError(f"{index_url} does not appear to have any data files")
 
         file_map = {}
         for row in data_files_table('tr')[1:]:
@@ -208,11 +207,14 @@ class XBRLAssembler:
             soup = BeautifulSoup(requests.get("https://www.sec.gov" + row[2].find('a')['href']).text, 'lxml')
             file_map[XBRLType.get(row[3].text)] = soup
 
-        return cls(info=index_url,
-                   schema=file_map[XBRLType.SCHEMA],
-                   data=file_map[XBRLType.DATA],
-                   label=file_map[XBRLType.LAB],
-                   ref=file_map[ref_doc])
+        try:
+            return cls(info=index_url,
+                       schema=file_map[XBRLType.SCHEMA],
+                       data=file_map[XBRLType.DATA],
+                       label=file_map[XBRLType.LAB],
+                       ref=file_map[ref_doc])
+        except KeyError:
+            raise XBRLError(f"Could not find all document from {index_url}")
 
     @classmethod
     def from_dir(cls, directory, ref_doc=XBRLType.PRE):
@@ -227,18 +229,21 @@ class XBRLAssembler:
         :return: A class:`xbrlassembler.XBRLAssembler`
         """
         if not os.path.isdir(directory):
-            raise XBRLDirectoryError(directory)
+            raise XBRLError(f"{directory} is not a valid directory")
 
         file_map = {}
         for item in os.listdir(directory):
             if re.search(r'.*\.(xml|xsd)', item):
                 file_map[XBRLType.get(item)] = BeautifulSoup(open(os.path.join(directory, item), 'r'), 'lxml')
 
-        return cls(info=directory,
-                   schema=file_map[XBRLType.SCHEMA],
-                   data=file_map[XBRLType.DATA],
-                   label=file_map[XBRLType.LAB],
-                   ref=file_map[ref_doc])
+        try:
+            return cls(info=directory,
+                       schema=file_map[XBRLType.SCHEMA],
+                       data=file_map[XBRLType.DATA],
+                       label=file_map[XBRLType.LAB],
+                       ref=file_map[ref_doc])
+        except KeyError:
+            raise XBRLError(f"Could not find all documents from {directory}")
 
     def uri(self, raw):
         """
@@ -272,8 +277,8 @@ class XBRLAssembler:
                 raise AttributeError
 
             return docs
-        except AttributeError:
-            raise XBRLSchemaError(self.info)
+        except AttributeError as e:
+            raise XBRLError(f"Attribute error raised while parsing XBRL schema\n\t{e}")
 
     def get_labels(self):
         """
@@ -307,8 +312,9 @@ class XBRLAssembler:
                 raise AttributeError
 
             return labels
-        except (AttributeError, TypeError):
-            raise XBRLLabelError(self.info)
+        except (AttributeError, TypeError) as e:
+            raise XBRLError(f"Attribute or Type error raised while parsing XBRL labels\n\t{e}")
+
 
     def get_cells(self):
         """
@@ -328,8 +334,8 @@ class XBRLAssembler:
             if not cells:
                 raise AttributeError
             return cells
-        except AttributeError:
-            raise XBRLCellsError(self.info)
+        except AttributeError as e:
+            raise XBRLError(f"Attribute error raised while parsing XBRL cells document\n\t{e}")
 
     def find_doc(self, search_func):
         """
@@ -360,8 +366,8 @@ class XBRLAssembler:
             raise ValueError(f"")
 
         if not doc_ele:
-            raise ValueError(f"No match found for {search} in names.\n\t"
-                             f"Names available {[name for name in self._docs.keys()]}]")
+            raise XBRLError(f"No match found for {search} in names.\n\t"
+                            f"Names available {[name for name in self._docs.keys()]}]")
 
         if not doc_ele._children:
             self.__assemble(doc_ele)
@@ -372,7 +378,7 @@ class XBRLAssembler:
         # Find desired section in reference document
         def_link = self.ref.find(re.compile(r'link', re.IGNORECASE), attrs={'xlink:role': doc_ele.uri})
         if not def_link:
-            raise XBRLRefDocError(self.info)
+            raise XBRLError(self.info)
 
         # Pull all elements and create XBRLElements out of them
         eles = {}
