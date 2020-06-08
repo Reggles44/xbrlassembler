@@ -380,6 +380,8 @@ class XBRLAssembler:
         if not def_link:
             raise XBRLError(self.info)
 
+        cols = collections.defaultdict(int)
+
         # Pull all elements and create XBRLElements out of them
         eles = {}
         for loc in def_link.find_all(re.compile(r'loc', re.IGNORECASE)):
@@ -388,20 +390,18 @@ class XBRLAssembler:
             ele = XBRLElement(uri=uri, label=label)
             eles[loc['xlink:label']] = ele
 
+            if ele.uri.lower() in self._cells:
+                for cell in self._cells[ele.uri.lower()]:
+                    cols[cell.ref] += 1
+
         # Find and create parent/child relationships between new elements
         for arc in def_link.find_all(re.compile(r'\w*arc', re.IGNORECASE)):
             parent, child, order = eles[arc['xlink:from']], eles[arc['xlink:to']], arc['order']
             parent.add_child(child=child, order=order)
 
-        # Remove columns that are not used
-        cols = collections.defaultdict(int)
-        for ele in eles.values():
-            if ele.uri.lower() in self._cells:
-                for cell in self._cells[ele.uri.lower()]:
-                    cols[cell.ref] += 1
-
         most_used = max(cols.values())
-        cols = set([c for c, count in cols.items() if count == most_used])
+        cols = {DateParser.parse(ref): ref for ref, count in cols.items() if count == most_used}
+        cols = set(cols.values())
 
         # Determine top and bottom level elements in the document and either fill in cells or
         #   link them to the overall document element
