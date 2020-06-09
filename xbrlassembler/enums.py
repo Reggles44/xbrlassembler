@@ -88,7 +88,7 @@ class DateParser(Enum):
 
         date_format = cls.find_format(string)
         if not date_format:
-            return tuple(None,)
+            return tuple((None,))
 
         dates = []
         for raw_date in re.findall(date_format.pattern(), string):
