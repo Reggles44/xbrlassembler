@@ -149,8 +149,6 @@ class XBRLAssembler:
     The main object to compile XBRL documents into complete sets of data by establishing a tree of information
 
     Args:
-        :param info: A printable representation of the dataset.
-        :type info: str
         :param schema: A class:`bs4.BeautifulSoup` for the xbrl schema file
         :param data: A class:`bs4.BeautifulSoup` for the xbrl data file
         :param label: A class:`bs4.BeautifulSoup` for the xbrl label file
@@ -158,10 +156,8 @@ class XBRLAssembler:
     """
     uri_re = re.compile(r'(?:lab_)?((us-gaap|source|dei|[a-z]{3,4})[_:][A-Za-z]{5,})', re.IGNORECASE)
 
-    def __init__(self, info, schema, data, label, ref):
+    def __init__(self, schema, data, label, ref):
         """Constructor Method"""
-        self.info = info
-
         for t, name in [(schema, "schema"),
                         (data, "data"),
                         (label, "label"),
@@ -208,8 +204,7 @@ class XBRLAssembler:
             file_map[XBRLType.get(row[3].text)] = soup
 
         try:
-            return cls(info=index_url,
-                       schema=file_map[XBRLType.SCHEMA],
+            return cls(schema=file_map[XBRLType.SCHEMA],
                        data=file_map[XBRLType.DATA],
                        label=file_map[XBRLType.LAB],
                        ref=file_map[ref_doc])
@@ -237,8 +232,7 @@ class XBRLAssembler:
                 file_map[XBRLType.get(item)] = BeautifulSoup(open(os.path.join(directory, item), 'r'), 'lxml')
 
         try:
-            return cls(info=directory,
-                       schema=file_map[XBRLType.SCHEMA],
+            return cls(schema=file_map[XBRLType.SCHEMA],
                        data=file_map[XBRLType.DATA],
                        label=file_map[XBRLType.LAB],
                        ref=file_map[ref_doc])
@@ -271,7 +265,8 @@ class XBRLAssembler:
                 label = roletype.find("link:definition").text
                 if "Parenthetical" not in label:  # "Statement" in label and
                     text = label.split(" - ")
-                    docs[uri] = XBRLElement(uri=uri, label=text[-1], ref=text[0])
+                    ele = XBRLElement(uri=uri, label=text[-1], ref=text[0])
+                    docs[uri] = ele
 
             if not docs:
                 raise AttributeError
@@ -363,9 +358,11 @@ class XBRLAssembler:
         elif isinstance(search, FinancialStatement):
             doc_ele = self.find_doc(lambda name: re.search(search.value, name))
         else:
-            raise ValueError(f"")
+            raise ValueError(f"XBRLAssembler.get() search term should be "
+                             f"re.Pattern, string, or FinancialStatement not {search}")
 
-        if not doc_ele:
+        print("FOUND DOC ELE", doc_ele)
+        if doc_ele is None:
             raise XBRLError(f"No match found for {search} in names.\n\t"
                             f"Names available {[name for name in self._docs.keys()]}]")
 
@@ -378,7 +375,7 @@ class XBRLAssembler:
         # Find desired section in reference document
         def_link = self.ref.find(re.compile(r'link', re.IGNORECASE), attrs={'xlink:role': doc_ele.uri})
         if not def_link:
-            raise XBRLError(self.info)
+            raise XBRLError(f"Can't find document in reference doc")
 
         cols = collections.defaultdict(int)
 

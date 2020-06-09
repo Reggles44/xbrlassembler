@@ -38,7 +38,7 @@ _re_map = {'%Y': r'(2[0-2][0-9]{2})',
            '%y': r'(0[1-9]|[1-2][0-9])',
            '%m': r'(0[1-9]|1[0-2])',
            '%d': r'(0[1-9]|[1-2][0-9]|30|31)',
-           '%b': r'([A-Z][a-z]{2}|[a-z]{3})'}
+           '%b': r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'}
 _quarter_map = {'Q1': '0331',
                 'Q2': '0630',
                 'Q3': '0930',
@@ -53,6 +53,7 @@ class DateParser(Enum):
     YEAR_MONTH_DAY = '%Y%m%d'
     YEAR_HALF_MONTH_DAY = '%y%m%d'
     MONTH_DAY_YEAR = '%m%d%Y'
+    DAY_MONTH_HALF_YEAR = '%d%b%Y'
 
 
     def pattern(self):

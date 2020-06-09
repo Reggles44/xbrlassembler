@@ -1,8 +1,3 @@
-import os
-
-import requests
-from bs4 import BeautifulSoup
-
 from tests import assembler_test, directory, save_index
 from xbrlassembler import XBRLAssembler
 
