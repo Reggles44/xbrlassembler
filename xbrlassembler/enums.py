@@ -37,7 +37,7 @@ class XBRLType(Enum):
 _re_map = {'%Y': r'(2[0-2][0-9]{2})',
            '%y': r'(0[1-9]|[1-2][0-9])',
            '%m': r'(0[1-9]|1[0-2])',
-           '%d': r'(0[1-9]|[1-2][0-9]|31|30)',
+           '%d': r'(0[1-9]|[1-2][0-9]|30|31)',
            '%b': r'([A-Z][a-z]{2}|[a-z]{3})'}
 _quarter_map = {'Q1': '0331',
                 'Q2': '0630',
@@ -49,10 +49,11 @@ class DateParser(Enum):
     Functional enum that ties together regex with datetime format strings to
         allow for parsing strings into datetime objects
     """
+    MONTH_STRING_DAY_YEAR = '%b%d%Y'
     YEAR_MONTH_DAY = '%Y%m%d'
     YEAR_HALF_MONTH_DAY = '%y%m%d'
     MONTH_DAY_YEAR = '%m%d%Y'
-    MONTH_STRING_DAY_YEAR = '%b%d%Y'
+
 
     def pattern(self):
         """
@@ -62,15 +63,6 @@ class DateParser(Enum):
         """
         re_list = [_re_map[f'%{char}'] for char in str(self.value).split('%') if char]
         return re.compile(fr"({'.?'.join(re_list)})")
-
-    def get_date(self, raw):
-        """
-        Parser function to remove unwanted characters and attempt to turn the string into a datetime object
-        :param raw: String containing a date
-        :return: class:`datetime.datetime` with the specified date
-        """
-        cleaned = re.sub(r'[^0-9A-Za-z]', '', raw)
-        return datetime.strptime(cleaned, self.value)
 
     @classmethod
     def find_format(cls, string):
@@ -94,8 +86,12 @@ class DateParser(Enum):
         for qtr, month_day in _quarter_map.items():
             string = string.replace(qtr, month_day)
 
-        date_re = cls.find_format(string)
-        if not date_re:
-            return (None,)
+        date_format = cls.find_format(string)
+        if not date_format:
+            return tuple(None,)
 
-        return tuple([date_re.get_date(raw_date[0]) for raw_date in re.findall(date_re.pattern(), string)])
+        dates = []
+        for raw_date in re.findall(date_format.pattern(), string):
+            dates.append(datetime.strptime(f"{raw_date[1]}{raw_date[2]}{raw_date[3]}", date_format.value))
+
+        return tuple(dates)
