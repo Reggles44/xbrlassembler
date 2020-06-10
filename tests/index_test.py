@@ -15,5 +15,4 @@ def test_index():
             files.append(re.split(r'\s{2,}', item)[4])
 
     for url in random.choices(files, k=10):
-        print('\n\n', url)
         assembler_test(XBRLAssembler.from_sec_index(index_url=url))
