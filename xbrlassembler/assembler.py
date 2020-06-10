@@ -361,7 +361,6 @@ class XBRLAssembler:
             raise ValueError(f"XBRLAssembler.get() search term should be "
                              f"re.Pattern, string, or FinancialStatement not {search}")
 
-        print("FOUND DOC ELE", doc_ele)
         if doc_ele is None:
             raise XBRLError(f"No match found for {search} in names.\n\t"
                             f"Names available {[name for name in self._docs.keys()]}]")
@@ -377,10 +376,10 @@ class XBRLAssembler:
         if not def_link:
             raise XBRLError(f"Can't find document in reference doc")
 
-        cols = collections.defaultdict(int)
 
         # Pull all elements and create XBRLElements out of them
         eles = {}
+        cols = collections.defaultdict(int)
         for loc in def_link.find_all(re.compile(r'loc', re.IGNORECASE)):
             uri = loc['xlink:href'].split('#')[1]
             label = self._labels[uri.lower()] if uri.lower() in self._labels else None
@@ -390,6 +389,9 @@ class XBRLAssembler:
             if ele.uri.lower() in self._cells:
                 for cell in self._cells[ele.uri.lower()]:
                     cols[cell.ref] += 1
+
+        if not cols:
+            raise XBRLError(f'{doc_ele.label} could not find any columns for cells')
 
         # Find and create parent/child relationships between new elements
         for arc in def_link.find_all(re.compile(r'\w*arc', re.IGNORECASE)):
