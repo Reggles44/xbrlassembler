@@ -3,6 +3,7 @@ import os
 from collections.abc import Iterable
 from datetime import datetime
 
+import pytest
 import requests
 from bs4 import BeautifulSoup
 
@@ -34,12 +35,10 @@ def save_index(index_url):
             file.write(requests.get(link).text)
 
 
+@pytest.mark.xfail(raises=XBRLError)
 def assembler_test(xbrl_assembler):
-    try:
-        income_statement = xbrl_assembler.get(FinancialStatement.INCOME_STATEMENT)
-        balance_sheet = xbrl_assembler.get(FinancialStatement.BALANCE_SHEET)
-    except XBRLError:
-        pass
+    income_statement = xbrl_assembler.get(FinancialStatement.INCOME_STATEMENT)
+    balance_sheet = xbrl_assembler.get(FinancialStatement.BALANCE_SHEET)
 
     for uri, date in income_statement.references().items():
         print(uri, date)
