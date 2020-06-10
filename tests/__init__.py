@@ -64,4 +64,4 @@ def assembler_test(xbrl_assembler):
         assert all(isinstance(ref[0], datetime) or ref[0] == None for ref in income_ref.values()) and \
                all(isinstance(ref[0], datetime) or ref[0] == None for ref in balance_ref.values())
     except XBRLError as e:
-        print(e)
+        pass
