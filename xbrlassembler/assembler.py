@@ -145,9 +145,9 @@ class XBRLElement:
         A recursive function to return a dictionary representation of the tree from this point downward
         :return: A dictionary where keys are labels and cells are bottem level xbrl elements
         """
-        dic = {self.label: []}
+        dic = {self.uri: []}
         if all(not child._children for child in self._children.keys()):
-            dic[self.label] = [ele for ele in self._children.keys()]
+            dic[self.uri] = [ele for ele in self._children.keys()]
         else:
             for ele, o in sorted(self._children.items(), key=lambda item: item[1] or -1):
                 dic.update(ele.to_dict())
