@@ -130,6 +130,16 @@ class XBRLElement:
                     refs[cell.ref] = DateParser.parse(cell.ref)
         return refs
 
+    def ids(self):
+        """
+        Recursive function to access all uri label pairs
+        :return: A dictionary where keys are uri strings and values are label strings or None is there is no label
+        """
+        ids = {self.uri, self.label}
+        for child in self._children:
+            ids.update(child.ids())
+        return ids
+
     def to_dict(self) -> dict:
         """
         A recursive function to return a dictionary representation of the tree from this point downward

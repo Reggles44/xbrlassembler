@@ -29,5 +29,4 @@ def test_failure():
     assert makes_exception(google_assembler.get, 'Not going to find a thing')
     assert makes_exception(google_assembler.get, re.compile('Not going to find a thing'))
 
-    print("DATEPARSER YOLO", DateParser.parse('Yolo'))
     assert DateParser.parse('Yolo') == (None,)
