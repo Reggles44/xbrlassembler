@@ -140,6 +140,16 @@ class XBRLElement:
             ids.update(child.ids())
         return ids
 
+    def to_list(self) -> list:
+        """
+        Recursive function to return a list of all elements in the tree
+        :return: A list of each XBRLElement in the tree
+        """
+        lst = [self]
+        for child in self._children:
+            lst.extend(child.to_list())
+        return lst
+
     def to_dict(self) -> dict:
         """
         A recursive function to return a dictionary representation of the tree from this point downward

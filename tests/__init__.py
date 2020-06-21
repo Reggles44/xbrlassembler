@@ -49,6 +49,7 @@ def assembler_test(xbrl_assembler):
     assert type(income_statement) == type(balance_sheet) == XBRLElement
     assert income_statement._children and balance_sheet._children
     assert type(income_statement.to_dict()) == type(balance_sheet.to_dict()) == dict
+    assert type(income_statement.to_list()) == type(balance_sheet.to_list()) == list
 
     print(income_statement.ids())
     print(balance_sheet.ids())
