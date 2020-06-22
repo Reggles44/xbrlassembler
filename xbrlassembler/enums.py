@@ -3,10 +3,15 @@ from datetime import datetime
 from enum import Enum
 
 
+
 class FinancialStatement(Enum):
     """A wrapper enum for common and tested regex to find specific documents"""
-    INCOME_STATEMENT = re.compile(r"operation|income|earnings|revenues|loss", re.IGNORECASE)
-    BALANCE_SHEET = re.compile(r"balance|condition|position|assets", re.IGNORECASE)
+    INCOME_STATEMENT = 'is'
+    BALANCE_SHEET = 'bs'
+
+
+_fin_stmt = {'is': re.compile(r"operation|income|earnings|revenues|loss", re.IGNORECASE),
+             'bs': re.compile(r"balance|condition|position|assets", re.IGNORECASE)}
 
 
 class XBRLType(Enum):

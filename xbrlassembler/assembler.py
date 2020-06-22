@@ -6,7 +6,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-from xbrlassembler.enums import XBRLType, FinancialStatement, DateParser
+from xbrlassembler.enums import XBRLType, FinancialStatement, DateParser, _fin_stmt
 from xbrlassembler.error import XBRLError
 
 logger = logging.getLogger('xbrlassembler')
@@ -376,7 +376,7 @@ class XBRLAssembler:
         elif isinstance(search, str):
             doc_ele = self.find_doc(lambda name: search in name)
         elif isinstance(search, FinancialStatement):
-            doc_ele = self.find_doc(lambda name: re.search(search.value, name))
+            doc_ele = self.find_doc(lambda name: re.search(_fin_stmt[search.value], name))
         else:
             raise ValueError(f"XBRLAssembler.get() search term should be "
                              f"re.Pattern, string, or FinancialStatement not {search}")
