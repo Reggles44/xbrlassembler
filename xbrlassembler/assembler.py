@@ -303,7 +303,7 @@ class XBRLAssembler:
         labels = {}
         label_link = self.label.find(re.compile('.*labellink', re.IGNORECASE))
         if not label_link:
-            raise AttributeError
+            raise XBRLError(f"No Data found in XBRL label document")
 
         for lab in label_link.find_all(re.compile('label$')):
             uri = self.uri(lab['xlink:label']).lower()
