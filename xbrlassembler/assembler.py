@@ -6,7 +6,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-from xbrlassembler.enums import XBRLType, FinancialStatement, DateParser, _fin_stmt
+from xbrlassembler.enums import XBRLType, FinancialStatement, DateParser
 from xbrlassembler.error import XBRLError
 
 logger = logging.getLogger('xbrlassembler')
