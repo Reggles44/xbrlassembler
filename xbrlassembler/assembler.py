@@ -224,7 +224,7 @@ class XBRLAssembler:
             file_map[XBRLType.get(row[3].text)] = soup
 
         try:
-            ref = next([ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map], None)
+            ref = next((ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map), None)
             return cls(schema=file_map[XBRLType.SCHEMA],
                        data=file_map[XBRLType.DATA],
                        label=file_map[XBRLType.LAB],
@@ -253,7 +253,7 @@ class XBRLAssembler:
                 file_map[XBRLType.get(item)] = BeautifulSoup(open(os.path.join(directory, item), 'r'), 'lxml')
 
         try:
-            ref = next([ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map], None)
+            ref = next((ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map), None)
             return cls(schema=file_map[XBRLType.SCHEMA],
                        data=file_map[XBRLType.DATA],
                        label=file_map[XBRLType.LAB],
