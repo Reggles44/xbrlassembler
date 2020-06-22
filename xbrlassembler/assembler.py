@@ -224,10 +224,11 @@ class XBRLAssembler:
             file_map[XBRLType.get(row[3].text)] = soup
 
         try:
+            ref = next([ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map], None)
             return cls(schema=file_map[XBRLType.SCHEMA],
                        data=file_map[XBRLType.DATA],
                        label=file_map[XBRLType.LAB],
-                       ref=file_map[ref_doc])
+                       ref=file_map[ref])
         except KeyError:
             raise XBRLError(f"Could not find all document from {index_url}")
 
@@ -252,10 +253,11 @@ class XBRLAssembler:
                 file_map[XBRLType.get(item)] = BeautifulSoup(open(os.path.join(directory, item), 'r'), 'lxml')
 
         try:
+            ref = next([ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map], None)
             return cls(schema=file_map[XBRLType.SCHEMA],
                        data=file_map[XBRLType.DATA],
                        label=file_map[XBRLType.LAB],
-                       ref=file_map[ref_doc])
+                       ref=file_map[ref])
         except KeyError:
             raise XBRLError(f"Could not find all documents from {directory}")
 
