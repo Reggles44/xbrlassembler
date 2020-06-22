@@ -280,57 +280,52 @@ class XBRLAssembler:
             find relevent data in the reference document
         :return: Dictionary where keys are URI's and values are top level class:`xbrlassembler.XBRLElement`
         """
-        try:
-            docs = {}
-            for roletype in self.schema.find_all("link:roletype"):
-                uri = roletype['roleuri']
-                label = roletype.find("link:definition").text
-                if "Parenthetical" not in label:  # "Statement" in label and
-                    text = label.split(" - ")
-                    ele = XBRLElement(uri=uri, label=text[-1], ref=text[0])
-                    docs[uri] = ele
+        docs = {}
+        for roletype in self.schema.find_all("link:roletype"):
+            uri = roletype['roleuri']
+            label = roletype.find("link:definition").text
+            if "Parenthetical" not in label:  # "Statement" in label and
+                text = label.split(" - ")
+                ele = XBRLElement(uri=uri, label=text[-1], ref=text[0])
+                docs[uri] = ele
 
-            if not docs:
-                raise AttributeError
+        if not docs:
+            raise XBRLError(f"No documents found while parsing XBRL schema")
 
-            return docs
-        except AttributeError as e:
-            raise XBRLError(f"Attribute error raised while parsing XBRL schema\n\t{e}")
+        return docs
+
 
     def get_labels(self):
         """
         Parsing function for xbrl label file to provide readable labels to all elements
         :return: Dictionary where keys are URI's and values are strings
         """
-        try:
-            labels = {}
-            label_link = self.label.find(re.compile('.*labellink', re.IGNORECASE))
-            if not label_link:
-                raise AttributeError
+        labels = {}
+        label_link = self.label.find(re.compile('.*labellink', re.IGNORECASE))
+        if not label_link:
+            raise AttributeError
 
-            for lab in label_link.find_all(re.compile('label$')):
-                uri = self.uri(lab['xlink:label']).lower()
-                if uri == lab['xlink:label']:
-                    uri = self.uri(lab['id'])
-                labels[uri] = lab.text
+        for lab in label_link.find_all(re.compile('label$')):
+            uri = self.uri(lab['xlink:label']).lower()
+            if uri == lab['xlink:label']:
+                uri = self.uri(lab['id'])
+            labels[uri] = lab.text
 
-            for lab in label_link.find_all(re.compile('loc$')):
-                label_uri = lab['xlink:label'].lower()
-                if label_uri not in labels:
-                    continue
+        for lab in label_link.find_all(re.compile('loc$')):
+            label_uri = lab['xlink:label'].lower()
+            if label_uri not in labels:
+                continue
 
-                uri = lab['xlink:href'].split('#')[1].lower()
-                if uri in labels:
-                    continue
+            uri = lab['xlink:href'].split('#')[1].lower()
+            if uri in labels:
+                continue
 
-                labels[uri] = labels[label_uri]
+            labels[uri] = labels[label_uri]
 
-            if not labels:
-                raise AttributeError
+        if not labels:
+            raise XBRLError(f"No labels found while parsing XBRL lab")
 
-            return labels
-        except (AttributeError, TypeError) as e:
-            raise XBRLError(f"Attribute or Type error raised while parsing XBRL labels\n\t{e}")
+        return labels
 
 
     def get_cells(self):
@@ -338,21 +333,19 @@ class XBRLAssembler:
         Parsing function for the base xml file that has all bottem level tree elements
         :return: A dict of low level xbrl data that is accessable through uri key
         """
-        try:
-            cells = collections.defaultdict(list)
+        cells = collections.defaultdict(list)
 
-            for node in self.data.find_all(attrs={"contextref": True}):
-                uri = node.name.replace(':', '_')
-                ele = XBRLElement(uri=uri,
-                                  value=node.text,
-                                  ref=node['contextref'])
-                cells[uri].append(ele)
+        for node in self.data.find_all(attrs={"contextref": True}):
+            uri = node.name.replace(':', '_')
+            ele = XBRLElement(uri=uri,
+                              value=node.text,
+                              ref=node['contextref'])
+            cells[uri].append(ele)
 
-            if not cells:
-                raise AttributeError
-            return cells
-        except AttributeError as e:
-            raise XBRLError(f"Attribute error raised while parsing XBRL cells document\n\t{e}")
+        if not cells:
+            raise XBRLError(f"No cells found while parsing XBRL xml")
+
+        return cells
 
     def find_doc(self, search_func):
         """
