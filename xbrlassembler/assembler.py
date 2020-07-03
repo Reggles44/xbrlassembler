@@ -20,7 +20,6 @@ class XBRLElement:
 
     Args:
         :param uri: A unique identifier for this specific point
-        :type uri: str, int, float, etc.
 
     Kwargs:
         :param label: Printable and readable identifier
