@@ -157,7 +157,7 @@ class XBRLElement:
                 dic.update(ele.to_dict())
         return dic
 
-    def to_json(self):
+    def to_json(self) -> dict:
         """
         Creates a json representation of the tree
         :return: A dictionary representation of the tree
@@ -169,7 +169,7 @@ class XBRLElement:
                 'children': []}
 
         for child in self._children:
-            json['children'].append(child.to_xml())
+            json['children'].append(child.to_json())
 
         return json
 
