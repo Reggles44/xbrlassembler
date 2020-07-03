@@ -2,6 +2,7 @@ import collections
 import logging
 import os
 import re
+from xml.etree import ElementTree
 
 import requests
 from bs4 import BeautifulSoup
@@ -156,6 +157,36 @@ class XBRLElement:
                 dic.update(ele.to_dict())
         return dic
 
+    def to_json(self):
+        """
+        Creates a json representation of the tree
+        :return: A dictionary representation of the tree
+        """
+        json = {'uri': self.uri,
+                'label': self.label,
+                'ref': self.ref,
+                'value': self.value,
+                'children': []}
+
+        for child in self._children:
+            json['children'].append(child.to_xml())
+
+        return json
+
+    @classmethod
+    def from_json(cls, data: dict):
+        """
+        Creates an XBRLElement tree from json data
+        :param data: A dict of data loaded from a json file
+        :return:
+        """
+        element = cls(uri=data['uri'], label=data['label'], ref=data['ref'], value=data['value'])
+
+        for child_data in data['children']:
+            element.add_child(cls.from_json(child_data))
+
+        return element
+
 
 class XBRLAssembler:
     """
@@ -257,9 +288,7 @@ class XBRLAssembler:
         :return:
         """
         uri_re = re.search(self.uri_re, raw)
-        if uri_re:
-            return uri_re.group(1)
-        return raw
+        return uri_re.group(1) if uri_re else raw
 
     def get_docs(self):
         """
@@ -281,7 +310,6 @@ class XBRLAssembler:
             raise XBRLError(f"No documents found while parsing XBRL schema")
 
         return docs
-
 
     def get_labels(self):
         """

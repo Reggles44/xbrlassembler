@@ -50,6 +50,7 @@ def assembler_test(xbrl_assembler):
     assert income_statement._children and balance_sheet._children
     assert type(income_statement.to_dict()) == type(balance_sheet.to_dict()) == dict
     assert type(income_statement.to_list()) == type(balance_sheet.to_list()) == list
+    assert type(income_statement.to_json()) == type(balance_sheet.to_json()) == dict
 
     print(income_statement.ids())
     print(balance_sheet.ids())
@@ -68,4 +69,3 @@ def assembler_test(xbrl_assembler):
 
     assert all(isinstance(ref[0], datetime) or ref[0] == None for ref in income_ref.values()) and \
            all(isinstance(ref[0], datetime) or ref[0] == None for ref in balance_ref.values())
-
