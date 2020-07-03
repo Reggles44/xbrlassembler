@@ -26,7 +26,7 @@ class XBRLType(Enum):
     def get(cls, item):
         """
         Class method to allow for categorization by string
-        :param item:
+        :param item: A string or object that can do `in` comparisons with a string
         :return:
         """
         item_ref = item.lower()[-7:]

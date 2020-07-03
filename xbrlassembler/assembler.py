@@ -24,11 +24,8 @@ class XBRLElement:
 
     Kwargs:
         :param label: Printable and readable identifier
-        :type label: str, optional
         :param value: Data that sits on a specific point, mostly used for elements at the bottem of the tree
-        :type value: int, float, optional
         :param ref: Reference data that gives context to the value
-        :type ref: str, int, float, datetime, optional
     """
     def __init__(self, uri, label=None, value=None, ref=None):
         """Constructor Method"""
@@ -50,7 +47,7 @@ class XBRLElement:
         """
         :return: Returns a string representation of various aspects of the non relational data
         """
-        return f"{self.uri} (label={self.label}, value={self.value}, ref={self.ref})"
+        return f"{self.uri} (label={self.label}, ref={self.ref}, value={self.value})"
 
     def add_child(self, child, order=-1):
         """
@@ -60,9 +57,7 @@ class XBRLElement:
 
         Args:
             :param child: An XBRLElement that is going to be under this element in the tree
-            :type child: class:`xbrlassembler.XBRLElement`
             :param order: An optional argument to add order to child elements
-            :type order: int, optional
         """
         if not isinstance(child, XBRLElement):
             return
@@ -109,7 +104,6 @@ class XBRLElement:
         """
         A function to create a printable representation of the tree from this point
         :return: A multiline string
-        :rtype: str
         """
         vis = f"\n{self.__repr__()}"
         if self._children:
@@ -199,11 +193,8 @@ class XBRLAssembler:
         """
         Alternative constructor that takes a url as a string and attempts to pull and parse all relevent documents
 
-        Args:
-            :param index_url: A string for a url to an sec index
-
-        Kwargs:
-            :param ref_doc: An class:`xbrlassembler.XBRLType` to specify the type of reference document
+        :param index_url: A string for a url to an sec index
+        :param ref_doc: An class:`xbrlassembler.XBRLType` to specify the type of reference document
 
         :return: A class:`xbrlassembler.XBRLAssembler`
         """
@@ -237,11 +228,9 @@ class XBRLAssembler:
         """
         Alternative constructor that will attempt to search the specific directory for a set of xbrl documents
 
-        Args:
-            :param directory: A string to a directory that will be scanned for xbrl documents
+        :param directory: A string to a directory that will be scanned for xbrl documents
+        :param ref_doc: Optional class`xbrlassembler.XBRLType` used to specify the requested reference document
 
-        Kwargs:
-            :param ref_doc: Optional class`xbrlassembler.XBRLType` used to specify the requested reference document
         :return: A class:`xbrlassembler.XBRLAssembler`
         """
         if not os.path.isdir(directory):
@@ -265,7 +254,7 @@ class XBRLAssembler:
         """
         Used to standardize uri's across mutliple documents
         :param raw: A non standard URI string
-        :type raw: str
+
         :return:
         """
         uri_re = re.search(self.uri_re, raw)
@@ -363,7 +352,7 @@ class XBRLAssembler:
             return the document tree relevent to the search
 
         :param search: Regex, string, or FinancialStatement enum to search with
-        :type search: str, class:`re.Pattern`, class:`xbrlassembler.FinancialStatement`
+
         :return: class:`xbrlassembler.XBRLElement` for the top of a tree representing the requested document
         """
         if isinstance(search, re.Pattern):
