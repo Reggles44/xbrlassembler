@@ -1,18 +1,7 @@
 Assembler
 =========
 
-XBRLElement
-----------------
-
-.. automodule:: xbrlassembler.XBRLElement
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-XBRLAssembler
-----------------
-
-.. automodule:: xbrlassembler.XBRLAssembler
+.. automodule:: xbrlassembler.assembler
    :members:
    :undoc-members:
    :show-inheritance:

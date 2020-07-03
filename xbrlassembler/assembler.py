@@ -52,7 +52,7 @@ class XBRLElement:
         """
         Essential function for establishing relationships between elements.
         This function ensures that the relationship is set on both parent and child
-            elements without duplication or Nones
+        elements without duplication or Nones
 
         Args:
             :param child: An XBRLElement that is going to be under this element in the tree
@@ -264,8 +264,8 @@ class XBRLAssembler:
     def get_docs(self):
         """
         Parsing function for xbrl schema
-        This establishes the access point for other documents as URI's from this
-            find relevent data in the reference document
+        This establishes the access point for other documents as URI's from this find relevent data in the
+        reference document
         :return: Dictionary where keys are URI's and values are top level class:`xbrlassembler.XBRLElement`
         """
         docs = {}
