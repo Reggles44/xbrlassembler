@@ -18,7 +18,6 @@ def test_failure():
     test_element.add_child(test_child)
     test_element.add_child(test_child)
 
-    assert makes_exception(XBRLAssembler, "info", "schema", "data", "label", "ref")
     assert makes_exception(XBRLAssembler.from_sec_index, "google index please")
     assert makes_exception(XBRLAssembler.from_dir, 'Yolo directory')
     assert makes_exception(XBRLAssembler.from_sec_index, "https://www.sec.gov/Archives/edgar/data/1652044/0001652044-20-00002-index.htm")

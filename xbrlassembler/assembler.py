@@ -296,12 +296,9 @@ class XBRLAssembler:
         """
         data = {}
 
-        print(os.path.isfile(file_path))
-
         if os.path.isfile(file_path):
             with open(file_path, 'r') as file:
                 data = json.load(file)
-                print("LOADING USED DATA", data)
 
         data.update({uri: ele.to_json() for uri, ele in self.xbrl_elements.items()})
 
@@ -391,7 +388,7 @@ class XBRLAssembler:
 
         if doc_ele is None:
             raise XBRLError(f"No match found for {search} in names.\n\t"
-                            f"Names available {[name for name in self._docs.keys()]}]")
+                            f"Names available {[name for name in self.xbrl_elements.keys()]}]")
 
         if not doc_ele._children:
             self.__assemble(doc_ele)
