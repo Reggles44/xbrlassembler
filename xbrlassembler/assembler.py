@@ -1,8 +1,8 @@
 import collections
+import json
 import logging
 import os
 import re
-from xml.etree import ElementTree
 
 import requests
 from bs4 import BeautifulSoup
@@ -191,35 +191,21 @@ class XBRLElement:
 class XBRLAssembler:
     """
     The main object to compile XBRL documents into complete sets of data by establishing a tree of information
-
-    Args:
-        :param schema: A class:`bs4.BeautifulSoup` for the xbrl schema file
-        :param data: A class:`bs4.BeautifulSoup` for the xbrl data file
-        :param label: A class:`bs4.BeautifulSoup` for the xbrl label file
-        :param ref: A class:`bs4.BeautifulSoup` for the desired xbrl reference file (Defintion, Presetataion, Calculation)
     """
     uri_re = re.compile(r'(?:lab_)?((us-gaap|source|dei|[a-z]{3,4})[_:][A-Za-z]{5,})', re.IGNORECASE)
 
-    def __init__(self, schema, data, label, ref):
-        """Constructor Method"""
-        for t, name in [(schema, "schema"),
-                        (data, "data"),
-                        (label, "label"),
-                        (ref, "ref")]:
-            if not isinstance(t, BeautifulSoup) or t is None:
-                raise ValueError(f"{type(t)} is not a BeautifulSoup")
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
 
-        self.schema = schema
-        self.data = data
-        self.label = label
-        self.ref = ref
+        self.xbrl_elements = {}
 
-        self._docs = self.get_docs()
-        self._labels = self.get_labels()
-        self._cells = self.get_cells()
+        # Used for storing data of supporting documents
+        self.labels = {}
+        self.cells = collections.defaultdict(list)
 
     @classmethod
-    def from_sec_index(cls, index_url, ref_doc=XBRLType.PRE):
+    def from_sec_index(cls, index_url, ref_doc=XBRLType.PRE, *args, **kwargs):
         """
         Alternative constructor that takes a url as a string and attempts to pull and parse all relevent documents
 
@@ -245,16 +231,21 @@ class XBRLAssembler:
             file_map[XBRLType.get(row[3].text)] = soup
 
         try:
+            xbrl_assembler = cls(*args, **kwargs)
+
             ref = next((ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map), None)
-            return cls(schema=file_map[XBRLType.SCHEMA],
-                       data=file_map[XBRLType.DATA],
-                       label=file_map[XBRLType.LAB],
-                       ref=file_map[ref])
+            xbrl_assembler.ref = file_map[ref]
+
+            xbrl_assembler.parse_schema(file_map[XBRLType.SCHEMA])
+            xbrl_assembler.parse_labels(file_map[XBRLType.LABEL])
+            xbrl_assembler.parse_cells(file_map[XBRLType.DATA])
+
+            return xbrl_assembler
         except KeyError:
             raise XBRLError(f"Could not find all document from {index_url}")
 
     @classmethod
-    def from_dir(cls, directory, ref_doc=XBRLType.PRE):
+    def from_dir(cls, directory, ref_doc=XBRLType.PRE, *args, **kwargs):
         """
         Alternative constructor that will attempt to search the specific directory for a set of xbrl documents
 
@@ -272,106 +263,109 @@ class XBRLAssembler:
                 file_map[XBRLType.get(item)] = BeautifulSoup(open(os.path.join(directory, item), 'r'), 'lxml')
 
         try:
+            xbrl_assembler = cls(*args, **kwargs)
+
             ref = next((ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map), None)
-            return cls(schema=file_map[XBRLType.SCHEMA],
-                       data=file_map[XBRLType.DATA],
-                       label=file_map[XBRLType.LAB],
-                       ref=file_map[ref])
+            xbrl_assembler.ref = file_map[ref]
+
+            xbrl_assembler.parse_schema(file_map[XBRLType.SCHEMA])
+            xbrl_assembler.parse_labels(file_map[XBRLType.LABEL])
+            xbrl_assembler.parse_cells(file_map[XBRLType.DATA])
+
+            return xbrl_assembler
         except KeyError:
-            raise XBRLError(f"Could not find all documents from {directory}")
+            raise XBRLError(f"Could not find all document from {directory}")
+
+    @classmethod
+    def from_json(cls, file_path, *args, **kwargs):
+        if not isinstance(file_path, str):
+            raise TypeError(f"XBRLAssembler.from_json needs a file_path string not {file_path}")
+
+        xbrl_assembler = cls(*args, **kwargs)
+
+        with open(file_path, 'r') as file:
+            data_dict = {uri: XBRLElement.from_json(ele) for uri, ele in json.load(file).items()}
+        xbrl_assembler.xbrl_elements.update(data_dict)
+
+        return xbrl_assembler
+
+    def to_json(self, file_path):
+        """
+        A write function to store all data in a json file
+        :param file_path: A string to a file
+        """
+        data = {}
+
+        print(os.path.isfile(file_path))
+
+        if os.path.isfile(file_path):
+            with open(file_path, 'r') as file:
+                data = json.load(file)
+                print("LOADING USED DATA", data)
+
+        data.update({uri: ele.to_json() for uri, ele in self.xbrl_elements.items()})
+
+        with open(file_path, 'w+') as file:
+            json.dump(data, file)
 
     def uri(self, raw):
         """
         Used to standardize uri's across mutliple documents
         :param raw: A non standard URI string
-
-        :return:
+        :return: A parsed string or raw
         """
         uri_re = re.search(self.uri_re, raw)
         return uri_re.group(1) if uri_re else raw
 
-    def get_docs(self):
+    def parse_schema(self, schema):
         """
-        Parsing function for xbrl schema
+        Parsing function for XBRL schema and adding it to the XBRLAssembler top level elements
+
         This establishes the access point for other documents as URI's from this find relevent data in the
         reference document
-        :return: Dictionary where keys are URI's and values are top level class:`xbrlassembler.XBRLElement`
+        :param schema: A `BeautifulSoup` object
+        :return:
         """
-        docs = {}
-        for roletype in self.schema.find_all("link:roletype"):
-            uri = roletype['roleuri']
-            label = roletype.find("link:definition").text
+        if not isinstance(schema, BeautifulSoup):
+            raise XBRLError(f"XBRLAssembler.parse_schema requires a BeautifulSoup not {schema}")
+
+        for role_type in schema.find_all("link:roletype"):
+            uri = role_type['roleuri']
+            label = role_type.find("link:definition").text
             if "Parenthetical" not in label:  # "Statement" in label and
                 text = label.split(" - ")
                 ele = XBRLElement(uri=uri, label=text[-1], ref=text[0])
-                docs[uri] = ele
+                self.xbrl_elements[uri] = ele
 
-        if not docs:
-            raise XBRLError(f"No documents found while parsing XBRL schema")
-
-        return docs
-
-    def get_labels(self):
+    def parse_labels(self, labels):
         """
-        Parsing function for xbrl label file to provide readable labels to all elements
-        :return: Dictionary where keys are URI's and values are strings
+        Parsing function for XBRL label file to provide readable labels to all elements
+        :param labels: A `BeautifulSoup` object
+        :return:
         """
-        labels = {}
-        label_link = self.label.find(re.compile('.*labellink', re.IGNORECASE))
-        if not label_link:
-            raise XBRLError(f"No Data found in XBRL label document")
+        if not isinstance(labels, BeautifulSoup):
+            raise XBRLError(f"XBRLAssembler.parse_schema requires a BeautifulSoup not {labels}")
 
-        for lab in label_link.find_all(re.compile('label$')):
+        for lab in labels.find_all(re.compile('label$', re.IGNORECASE)):
             uri = self.uri(lab['xlink:label']).lower()
             if uri == lab['xlink:label']:
                 uri = self.uri(lab['id'])
-            labels[uri] = lab.text
+            self.labels[uri] = lab.text
 
-        for lab in label_link.find_all(re.compile('loc$')):
-            label_uri = lab['xlink:label'].lower()
-            if label_uri not in labels:
-                continue
-
-            uri = lab['xlink:href'].split('#')[1].lower()
-            if uri in labels:
-                continue
-
-            labels[uri] = labels[label_uri]
-
-        if not labels:
-            raise XBRLError(f"No labels found while parsing XBRL lab")
-
-        return labels
-
-
-    def get_cells(self):
+    def parse_cells(self, data):
         """
-        Parsing function for the base xml file that has all bottem level tree elements
-        :return: A dict of low level xbrl data that is accessable through uri key
+        Parsing function for the base XML data document for low level data
+        :param data: A `BeautifulSoup` object
         """
-        cells = collections.defaultdict(list)
+        if not isinstance(data, BeautifulSoup):
+            raise XBRLError(f"XBRLAssembler.parse_schema requires a BeautifulSoup not {data}")
 
-        for node in self.data.find_all(attrs={"contextref": True}):
+        for node in data.find_all(attrs={"contextref": True}):
             uri = node.name.replace(':', '_')
             ele = XBRLElement(uri=uri,
                               value=node.text,
                               ref=node['contextref'])
-            cells[uri].append(ele)
-
-        if not cells:
-            raise XBRLError(f"No cells found while parsing XBRL xml")
-
-        return cells
-
-    def find_doc(self, search_func):
-        """
-        A sorted search function for specific top level class:`xbrlassembler.XBRLElement` base on uri or label
-        :param search_func: Function returning a bool to determine search method
-        :return: Top level XBRLElement to create a tree under
-        """
-        for uri, ele in sorted(self._docs.items(), key=lambda item: item[1].ref):
-            if search_func(uri) or search_func(ele.label):
-                return ele
+            self.cells[uri].append(ele)
 
     def get(self, search) -> XBRLElement:
         """
@@ -382,12 +376,15 @@ class XBRLAssembler:
 
         :return: class:`xbrlassembler.XBRLElement` for the top of a tree representing the requested document
         """
+        search_data = sorted(self.xbrl_elements.items(), key=lambda item: item[1].ref)
+
         if isinstance(search, re.Pattern):
-            doc_ele = self.find_doc(lambda name: re.search(search, name))
+            doc_ele = next((ele for uri, ele in search_data if re.search(search, uri) or re.search(search, ele.label)))
         elif isinstance(search, str):
-            doc_ele = self.find_doc(lambda name: search in name)
+            doc_ele = next((ele for uri, ele in search_data if search in uri or search in ele.label))
         elif isinstance(search, FinancialStatement):
-            doc_ele = self.find_doc(lambda name: re.search(search.value, name))
+            search = search.value
+            doc_ele = next((ele for uri, ele in search_data if re.search(search, uri) or re.search(search, ele.label)))
         else:
             raise ValueError(f"XBRLAssembler.get() search term should be "
                              f"re.Pattern, string, or FinancialStatement not {search}")
@@ -407,18 +404,17 @@ class XBRLAssembler:
         if not def_link:
             raise XBRLError(f"Can't find document in reference doc")
 
-
         # Pull all elements and create XBRLElements out of them
         eles = {}
         cols = collections.defaultdict(int)
         for loc in def_link.find_all(re.compile(r'loc', re.IGNORECASE)):
             uri = loc['xlink:href'].split('#')[1]
-            label = self._labels[uri.lower()] if uri.lower() in self._labels else None
+            label = self.labels[uri.lower()] if uri.lower() in self.labels else None
             ele = XBRLElement(uri=uri, label=label)
             eles[loc['xlink:label']] = ele
 
-            if ele.uri.lower() in self._cells:
-                for cell in self._cells[ele.uri.lower()]:
+            if ele.uri.lower() in self.cells:
+                for cell in self.cells[ele.uri.lower()]:
                     cols[cell.ref] += 1
 
         if not cols:
@@ -439,7 +435,7 @@ class XBRLAssembler:
             if ele._parent is None:
                 doc_ele.add_child(child=ele, order=order)
 
-            if ele.uri.lower() in self._cells:
-                for cell in self._cells[ele.uri.lower()]:
+            if ele.uri.lower() in self.cells:
+                for cell in self.cells[ele.uri.lower()]:
                     if cell.ref in cols:
                         ele.add_child(cell)

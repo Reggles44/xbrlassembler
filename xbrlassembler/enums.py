@@ -18,7 +18,7 @@ class XBRLType(Enum):
     PRE = ("pre",)
 
     # Required
-    LAB = ("lab",)
+    LABEL = ("lab",)
     SCHEMA = ("sch", "xsd")
     DATA = ("xml", "ins")
 
