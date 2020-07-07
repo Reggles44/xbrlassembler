@@ -8,8 +8,8 @@ from bs4 import BeautifulSoup
 
 from xbrlassembler import XBRLElement, FinancialStatement, XBRLAssembler
 
-logger = logging.getLogger('xbrlassembler')
-logger.setLevel(logging.ERROR)
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('xbrlassembler').setLevel(logging.DEBUG)
 
 directory = os.path.abspath(os.path.join(os.getcwd(), 'test files'))
 os.makedirs(directory, exist_ok=True)

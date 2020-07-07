@@ -377,7 +377,9 @@ class XBRLAssembler:
                 try:
                     self.__assemble(ele)
                 except XBRLError as e:
-                    logger.error(e)
+                    logger.debug(e)
+
+        return self.xbrl_elements
 
     def get(self, search) -> XBRLElement:
         """
