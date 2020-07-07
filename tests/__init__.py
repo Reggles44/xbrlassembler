@@ -6,7 +6,7 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 
-from xbrlassembler import XBRLElement, FinancialStatement
+from xbrlassembler import XBRLElement, FinancialStatement, XBRLAssembler
 
 logger = logging.getLogger('xbrlassembler')
 logger.setLevel(logging.ERROR)
@@ -34,38 +34,14 @@ def save_index(index_url):
             file.write(requests.get(link).text)
 
 
-def assembler_test(xbrl_assembler):
-    income_statement = xbrl_assembler.get(FinancialStatement.INCOME_STATEMENT)
-    balance_sheet = xbrl_assembler.get(FinancialStatement.BALANCE_SHEET)
+def assembler_test(xbrl_assembler: XBRLAssembler):
+    xbrl_assembler.get_all()
 
-    for uri, date in income_statement.references().items():
-        print(uri, date)
-    print(income_statement.visualize())
-
-    for uri, date in balance_sheet.references().items():
-        print(uri, date)
-    print(balance_sheet.visualize())
-
-    assert type(income_statement) == type(balance_sheet) == XBRLElement
-    assert income_statement._children and balance_sheet._children
-    assert type(income_statement.to_dict()) == type(balance_sheet.to_dict()) == dict
-    assert type(income_statement.to_list()) == type(balance_sheet.to_list()) == list
-    assert type(income_statement.to_json()) == type(balance_sheet.to_json()) == dict
-
-    print(income_statement.ids())
-    print(balance_sheet.ids())
-
-    assert type(income_statement.ids()) == type(balance_sheet.ids()) == dict
-
-    income_ref = income_statement.references()
-    balance_ref = balance_sheet.references()
-
-    assert isinstance(income_ref, Iterable) or isinstance(balance_ref, Iterable)
-
-    for ref, date in income_ref.items():
-        print(ref, date, type(date[0]))
-    for ref, date in balance_ref.items():
-        print(ref, date, type(date[0]))
-
-    assert all(isinstance(ref[0], datetime) or ref[0] == None for ref in income_ref.values()) and \
-           all(isinstance(ref[0], datetime) or ref[0] == None for ref in balance_ref.values())
+    for ele in xbrl_assembler.xbrl_elements:
+        print(ele.visualize())
+        assert isinstance(ele, XBRLElement)
+        assert isinstance(ele.to_dict(), dict)
+        assert isinstance(ele.to_list(), list)
+        assert isinstance(ele.to_json(), dict)
+        assert isinstance(ele.ids(), dict)
+        assert isinstance(ele.references(), Iterable)
