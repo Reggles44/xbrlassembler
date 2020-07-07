@@ -298,12 +298,16 @@ class XBRLAssembler:
 
         if os.path.isfile(file_path):
             with open(file_path, 'r') as file:
-                data = json.load(file)
+                data = {uri: XBRLElement.from_json(dat) for uri, dat in json.load(file).items()}
 
-        data.update({uri: ele.to_json() for uri, ele in self.xbrl_elements.items()})
+        for uri, ele in self.xbrl_elements.items():
+            if uri in data.keys():
+                data[uri].merge(ele)
+            else:
+                data[uri] = ele
 
         with open(file_path, 'w+') as file:
-            json.dump(data, file)
+            json.dump({uri: ele.to_json() for uri, ele in data.items()}, file)
 
     def uri(self, raw):
         """
@@ -364,12 +368,16 @@ class XBRLAssembler:
                               ref=node['contextref'])
             self.cells[uri].append(ele)
 
-    def get_statements(self):
+    def get_all(self):
         """
-        A shortcut command for going through all defined financial statements
+        A shortcut command to parse all documents against the reference document
         """
-        for stmt in FinancialStatement:
-            self.get(stmt)
+        for ele in self.xbrl_elements.values():
+            if not ele._children:
+                try:
+                    self.__assemble(ele)
+                except XBRLError as e:
+                    logger.error(e)
 
     def get(self, search) -> XBRLElement:
         """
@@ -406,7 +414,7 @@ class XBRLAssembler:
         # Find desired section in reference document
         def_link = self.ref.find(re.compile(r'link', re.IGNORECASE), attrs={'xlink:role': doc_ele.uri})
         if not def_link:
-            raise XBRLError(f"Can't find document in reference doc")
+            raise XBRLError(f"Refernce document doesn't contain any information for {doc_ele.uri}")
 
         # Pull all elements and create XBRLElements out of them
         eles = {}

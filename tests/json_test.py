@@ -9,8 +9,7 @@ def test_json():
     test_file = os.path.join(os.getcwd(), 'test.json')
 
     download_assembler = XBRLAssembler.from_sec_index(index_url=google_index)
-    download_assembler.get(FinancialStatement.INCOME_STATEMENT)
-    download_assembler.get(FinancialStatement.BALANCE_SHEET)
+    download_assembler.get_all()
     download_assembler.to_json(test_file)
 
     assembler_test(XBRLAssembler.from_json(test_file))
