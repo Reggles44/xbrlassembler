@@ -364,6 +364,13 @@ class XBRLAssembler:
                               ref=node['contextref'])
             self.cells[uri].append(ele)
 
+    def get_statements(self):
+        """
+        A shortcut command for going through all defined financial statements
+        """
+        for stmt in FinancialStatement:
+            self.get(stmt)
+
     def get(self, search) -> XBRLElement:
         """
         Main access function that will take a variety of search criteria and attempt to create and
