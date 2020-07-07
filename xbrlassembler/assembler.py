@@ -32,13 +32,15 @@ class XBRLElement:
         self.uri = uri
         self.label = label
         self.ref = ref
+        self.value = value
 
         # Convert to float to remove any issues with comparing string representations of numbers
         try:
             self.value = float(value)
         except (TypeError, ValueError):
-            logger.info(f"XBRLElement value convert to float failure for {value}")
-            self.value = value
+            if isinstance(value, str):
+                self.value = value.replace('\n', '')
+            logger.info(f"XBRLElement value convert to float failure for {self.value}")
 
         self._children = {}
         self._parent = None
@@ -198,11 +200,15 @@ class XBRLAssembler:
         self.args = args
         self.kwargs = kwargs
 
+
         self.xbrl_elements = {}
 
         # Used for storing data of supporting documents
         self.labels = {}
         self.cells = collections.defaultdict(list)
+
+        self.ref = None
+
 
     @classmethod
     def from_sec_index(cls, index_url, ref_doc=XBRLType.PRE, *args, **kwargs):
@@ -413,6 +419,9 @@ class XBRLAssembler:
         return doc_ele
 
     def __assemble(self, doc_ele):
+        if self.ref is None:
+            return
+
         # Find desired section in reference document
         def_link = self.ref.find(re.compile(r'link', re.IGNORECASE), attrs={'xlink:role': doc_ele.uri})
         if not def_link:

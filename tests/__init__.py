@@ -37,7 +37,7 @@ def save_index(index_url):
 def assembler_test(xbrl_assembler: XBRLAssembler):
     xbrl_assembler.get_all()
 
-    for ele in xbrl_assembler.xbrl_elements:
+    for uri, ele in xbrl_assembler.xbrl_elements.items():
         print(ele.visualize())
         assert isinstance(ele, XBRLElement)
         assert isinstance(ele.to_dict(), dict)
