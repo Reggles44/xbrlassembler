@@ -136,6 +136,19 @@ class XBRLElement:
             ids.update(child.ids())
         return ids
 
+    def search(self, term):
+        """
+        A search function to find specific node that has a uri or label that matches
+        :param term: String, re.pattern, or anything that can go into a search
+        :return: A specific node from the tree
+        """
+        if re.search(term, self.uri) or re.search(term, self.label):
+            return self
+        else:
+            for child in self._children:
+                if child.search(term):
+                    return child
+
     def to_list(self) -> list:
         """
         Recursive function to return a list of all elements in the tree
@@ -199,7 +212,6 @@ class XBRLAssembler:
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
-
 
         self.xbrl_elements = {}
 
