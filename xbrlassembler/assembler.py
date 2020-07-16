@@ -146,8 +146,9 @@ class XBRLElement:
             return self
         else:
             for child in self._children:
-                if child.search(term):
-                    return child
+                child_search = child.search(term)
+                if child_search:
+                    return child_search
 
     def to_list(self) -> list:
         """
