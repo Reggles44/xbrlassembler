@@ -142,7 +142,7 @@ class XBRLElement:
         :param term: String, re.pattern, or anything that can go into a search
         :return: A specific node from the tree
         """
-        if re.search(term, self.uri) or re.search(term, self.label):
+        if (re.search(term, self.uri) if self.uri else True) or (re.search(term, self.label) if self.label else True):
             return self
         else:
             for child in self._children:
