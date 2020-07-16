@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from collections.abc import Iterable
 from datetime import datetime
 
@@ -40,6 +41,7 @@ def assembler_test(xbrl_assembler: XBRLAssembler):
     for uri, ele in xbrl_assembler.xbrl_elements.items():
         print(ele.visualize())
         assert isinstance(ele, XBRLElement)
+        assert isinstance(ele.search(re.compile('.')), XBRLElement)
         assert isinstance(ele.to_dict(), dict)
         assert isinstance(ele.to_list(), list)
         assert isinstance(ele.to_json(), dict)
