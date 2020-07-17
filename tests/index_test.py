@@ -16,5 +16,5 @@ def test_index():
         if '10-k ' in item.lower() or '10-q ' in item.lower():
             files.append(re.split(r'\s{2,}', item)[4])
 
-    for url in random.choices(files, k=10):
+    for url in random.choices(files, k=3):
         assembler_test(XBRLAssembler.from_sec_index(index_url=url))

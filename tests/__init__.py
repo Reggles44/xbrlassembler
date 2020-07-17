@@ -9,8 +9,8 @@ from bs4 import BeautifulSoup
 
 from xbrlassembler import XBRLElement, FinancialStatement, XBRLAssembler
 
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger('xbrlassembler').setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.ERROR)
+logging.getLogger('xbrlassembler')
 
 directory = os.path.abspath(os.path.join(os.getcwd(), 'test files'))
 os.makedirs(directory, exist_ok=True)
@@ -36,14 +36,13 @@ def save_index(index_url):
 
 
 def assembler_test(xbrl_assembler: XBRLAssembler):
+    xbrl_assembler.get(FinancialStatement.DOCUMENT_INFORMATION)
     xbrl_assembler.get_all()
 
     for uri, ele in xbrl_assembler.xbrl_elements.items():
-        print(ele.visualize())
         assert isinstance(ele, XBRLElement)
-        assert isinstance(ele.search(re.compile('.')), XBRLElement)
+        assert isinstance(ele.search(re.compile('s')), XBRLElement)
         assert isinstance(ele.to_dict(), dict)
-        assert isinstance(ele.to_list(), list)
         assert isinstance(ele.to_json(), dict)
         assert isinstance(ele.ids(), dict)
         assert isinstance(ele.references(), Iterable)

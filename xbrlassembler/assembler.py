@@ -42,8 +42,8 @@ class XBRLElement:
                 self.value = value.replace('\n', '')
             logger.info(f"XBRLElement value convert to float failure for {self.value}")
 
-        self._children = {}
-        self._parent = None
+        self.children = {}
+        self.parent = None
 
     def __repr__(self):
         """
@@ -64,10 +64,10 @@ class XBRLElement:
         if not isinstance(child, XBRLElement):
             return
 
-        if child in self._children:
+        if child in self.children:
             return
 
-        for already_child in self._children:
+        for already_child in self.children:
             if already_child.uri == child.uri and already_child.ref == child.ref:
                 self.merge(child)
                 return
@@ -78,8 +78,8 @@ class XBRLElement:
             logger.info(f"order to float to int failed {order}, {e}")
             return
 
-        self._children[child] = order
-        child._parent = self
+        self.children[child] = order
+        child.parent = self
 
     def merge(self, other):
         """
@@ -87,19 +87,11 @@ class XBRLElement:
         :param other: An `XBRLElement` to be absorbed
         :return:
         """
-        if not isinstance(other, XBRLElement):
-            return
+        self.label = self.label or other.label
+        self.value = self.value or other.value
+        self.parent = self.parent or other.parent
 
-        if self.label is None and other.label is not None:
-            self.label = other.label
-
-        if self.value is None and other.value is not None:
-            self.value = other.value
-
-        if self._parent is None and other._parent is not None:
-            self._parent = other._parent
-
-        for new_child, order in other._children.items():
+        for new_child, order in other.children.items():
             self.add_child(new_child, order)
 
     def visualize(self) -> str:
@@ -108,10 +100,9 @@ class XBRLElement:
         :return: A multiline string
         """
         vis = f"\n{self.__repr__()}"
-        if self._children:
-            for child in self._children:
-                cvis = child.visualize().replace('\n', '\n\t')
-                vis += cvis
+        if self.children:
+            for child in self.children:
+                vis += child.visualize().replace('\n', '\n\t')
         return vis
 
     def references(self) -> dict:
@@ -119,12 +110,10 @@ class XBRLElement:
         A quick utility function to pull and parse all bottom level references in the tree
         :return: A dict mapping old references to parsed ones
         """
-        refs = {}
-        for atr, cells in self.to_dict().items():
-            for cell in cells:
-                if cell.ref not in refs.keys() and cell.ref is not None:
-                    refs[cell.ref] = DateParser.parse(cell.ref)
-        return refs
+        ref_map = {self.ref: DateParser.parse(self.ref)}
+        for child in self.children:
+            ref_map.update(child.references())
+        return ref_map
 
     def ids(self):
         """
@@ -132,7 +121,7 @@ class XBRLElement:
         :return: A dictionary where keys are uri strings and values are label strings or None is there is no label
         """
         ids = {self.uri: self.label}
-        for child in self._children:
+        for child in self.children:
             ids.update(child.ids())
         return ids
 
@@ -145,20 +134,10 @@ class XBRLElement:
         if (re.search(term, self.uri) if self.uri else False) or (re.search(term, self.label) if self.label else False):
             return self
         else:
-            for child in self._children:
+            for child in self.children:
                 child_search = child.search(term)
                 if child_search:
                     return child_search
-
-    def to_list(self) -> list:
-        """
-        Recursive function to return a list of all elements in the tree
-        :return: A list of each XBRLElement in the tree
-        """
-        lst = [self]
-        for child in self._children:
-            lst.extend(child.to_list())
-        return lst
 
     def to_dict(self) -> dict:
         """
@@ -166,10 +145,10 @@ class XBRLElement:
         :return: A dictionary where keys are labels and cells are bottem level xbrl elements
         """
         dic = {self.uri: []}
-        if all(not child._children for child in self._children.keys()):
-            dic[self.uri] = [ele for ele in self._children.keys()]
+        if all(not child.children for child in self.children.keys()):
+            dic[self.uri] = [ele for ele in self.children.keys()]
         else:
-            for ele, o in sorted(self._children.items(), key=lambda item: item[1] or -1):
+            for ele, o in sorted(self.children.items(), key=lambda item: item[1] or -1):
                 dic.update(ele.to_dict())
         return dic
 
@@ -184,7 +163,7 @@ class XBRLElement:
                 'value': self.value,
                 'children': []}
 
-        for child in self._children:
+        for child in self.children:
             json['children'].append(child.to_json())
 
         return json
@@ -252,7 +231,7 @@ class XBRLAssembler:
         try:
             xbrl_assembler = cls(*args, **kwargs)
 
-            ref = next((ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map), None)
+            ref = next((ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map))
             xbrl_assembler.ref = file_map[ref]
 
             xbrl_assembler.parse_schema(file_map[XBRLType.SCHEMA])
@@ -284,7 +263,7 @@ class XBRLAssembler:
         try:
             xbrl_assembler = cls(*args, **kwargs)
 
-            ref = next((ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map), None)
+            ref = next((ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map))
             xbrl_assembler.ref = file_map[ref]
 
             xbrl_assembler.parse_schema(file_map[XBRLType.SCHEMA])
@@ -392,7 +371,7 @@ class XBRLAssembler:
         A shortcut command to parse all documents against the reference document
         """
         for ele in self.xbrl_elements.values():
-            if not ele._children:
+            if not ele.children:
                 try:
                     self.__assemble(ele)
                 except XBRLError as e:
@@ -426,7 +405,7 @@ class XBRLAssembler:
             raise XBRLError(f"No match found for {search} in names.\n\t"
                             f"Names available {[name for name in self.xbrl_elements.keys()]}]")
 
-        if not doc_ele._children:
+        if not doc_ele.children:
             self.__assemble(doc_ele)
 
         return doc_ele
@@ -442,7 +421,7 @@ class XBRLAssembler:
 
         # Pull all elements and create XBRLElements out of them
         eles = {}
-        cols = collections.defaultdict(int)
+        references = collections.defaultdict(int)
         for loc in def_link.find_all(re.compile(r'loc', re.IGNORECASE)):
             uri = loc['xlink:href'].split('#')[1]
             label = self.labels[uri.lower()] if uri.lower() in self.labels else None
@@ -451,9 +430,9 @@ class XBRLAssembler:
 
             if ele.uri.lower() in self.cells:
                 for cell in self.cells[ele.uri.lower()]:
-                    cols[cell.ref] += 1
+                    references[cell.ref] += 1
 
-        if not cols:
+        if not references:
             raise XBRLError(f'{doc_ele.label} could not find any columns for cells')
 
         # Find and create parent/child relationships between new elements
@@ -461,17 +440,22 @@ class XBRLAssembler:
             parent, child, order = eles[arc['xlink:from']], eles[arc['xlink:to']], arc['order']
             parent.add_child(child=child, order=order)
 
-        most_used = max(cols.values())
-        cols = {DateParser.parse(ref): ref for ref, count in cols.items() if count == most_used}
-        cols = set(cols.values())
+        # Clean out incorrect refences
+        most_used = max(references.values())
+        references = set(ref for ref, count in references.items() if count == most_used)
 
-        # Determine top and bottom level elements in the document and either fill in cells or
-        #   link them to the overall document element
+        # Determine top and bottom level elements in the document (put under header or fill in cells)
         for order, ele in enumerate(eles.values()):
-            if ele._parent is None:
+            if ele.parent is None:
                 doc_ele.add_child(child=ele, order=order)
 
             if ele.uri.lower() in self.cells:
-                for cell in self.cells[ele.uri.lower()]:
-                    if cell.ref in cols:
-                        ele.add_child(cell)
+                possible_cells = self.cells[ele.uri.lower()]
+
+                if all(cell.ref not in references for cell in possible_cells):
+                    cells = possible_cells
+                else:
+                    cells = [cell for cell in possible_cells if cell.ref in references]
+
+                for cell in cells:
+                    ele.add_child(cell)

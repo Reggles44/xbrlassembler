@@ -13,12 +13,9 @@ class FinancialStatement(Enum):
 
 class XBRLType(Enum):
     """A functional enum for categorizing XBRL documents into their respective use cases"""
-    # Choose One
     CALC = ("cal",)
     DEF = ("def",)
     PRE = ("pre",)
-
-    # Required
     LABEL = ("lab",)
     SCHEMA = ("sch", "xsd")
     DATA = ("xml", "ins")
@@ -86,6 +83,9 @@ class DateParser(Enum):
         :param string: Raw string that might include dates
         :return: Tuple of class:`datetime.datetime` objects found
         """
+        if string is None:
+            return
+
         for qtr, month_day in _quarter_map.items():
             string = string.replace(qtr, month_day)
 
