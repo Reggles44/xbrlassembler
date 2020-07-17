@@ -7,3 +7,4 @@
 /tests/test files/*
 /test files/*
 /tests/test.json
+/tests/.coverage

@@ -390,17 +390,15 @@ class XBRLAssembler:
         """
         search_data = sorted(self.xbrl_elements.items(), key=lambda item: item[1].ref)
 
-        if isinstance(search, re.Pattern):
-            doc_ele = next((ele for uri, ele in search_data if re.search(search, uri) or re.search(search, ele.label)))
-        elif isinstance(search, str):
-            doc_ele = next((ele for uri, ele in search_data if search in uri or search in ele.label))
+        if isinstance(search, re.Pattern) or isinstance(search, str):
+            search_term = search
         elif isinstance(search, FinancialStatement):
-            search = search.value
-            doc_ele = next((ele for uri, ele in search_data if re.search(search, uri) or re.search(search, ele.label)))
+            search_term = search.value
         else:
             raise ValueError(f"XBRLAssembler.get() search term should be "
                              f"re.Pattern, string, or FinancialStatement not {search}")
 
+        doc_ele = next((ele for uri, ele in search_data if re.search(search_term, uri) or re.search(search_term, ele.label)))
         if doc_ele is None:
             raise XBRLError(f"No match found for {search} in names.\n\t"
                             f"Names available {[name for name in self.xbrl_elements.keys()]}]")

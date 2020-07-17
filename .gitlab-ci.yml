@@ -26,7 +26,6 @@ test:python3.7:
   script:
     - ls -alt
     - python -m pip install --upgrade pytest coverage requests
-    - pytest
     - coverage run --source=xbrlassembler -m pytest
     - coverage report -m
   coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
