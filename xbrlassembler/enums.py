@@ -8,7 +8,7 @@ class FinancialStatement(Enum):
     """A wrapper enum for common and tested regex to find specific documents"""
     INCOME_STATEMENT = re.compile(r"operation|income|earnings|revenues|loss", re.IGNORECASE)
     BALANCE_SHEET = re.compile(r"balance|condition|position|assets", re.IGNORECASE)
-    DOCUMENT_INFORMATION = re.compile(r"information", re.IGNORECASE)
+    DOCUMENT_INFORMATION = re.compile(r"cover.page|information", re.IGNORECASE)
 
 
 class XBRLType(Enum):
