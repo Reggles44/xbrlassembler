@@ -1,5 +1,6 @@
-rm -r .pytest_cache
+DEL ".pytest_cache" -y
 cd tests
-rm -r test files
-rm .coverage
-rm test.json
+DEL "test files" -y
+DEL .coverage
+DEL test.json
+cd ..

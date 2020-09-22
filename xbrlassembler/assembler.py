@@ -165,7 +165,7 @@ class XBRLElement:
         Creates a json representation of the tree
         :return: A dictionary representation of the tree
         """
-        json = {'uri': self.uri, 'label': self.label, 'ref': self.ref, 'value': self.value, 'children': []}
+        json = {'u': self.uri, 'l': self.label, 'r': self.ref, 'v': self.value, 'c': []}
         for child in self.children:
             json['children'].append(child.to_json())
         return json
@@ -177,8 +177,8 @@ class XBRLElement:
         :param data: A dict of data loaded from a json file
         :return:
         """
-        element = cls(uri=data['uri'], label=data['label'], ref=data['ref'], value=data['value'])
-        for child_data in data['children']:
+        element = cls(uri=data['u'], label=data['l'], ref=data['r'], value=data['v'])
+        for child_data in data['c']:
             element.add_child(cls.from_json(child_data))
         return element
 
