@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+from functools import lru_cache
 
 import requests
 from bs4 import BeautifulSoup
@@ -51,6 +52,14 @@ class XBRLElement:
         """
         return f"{self.uri} (label={self.label}, ref={self.ref}, value={self.value})"
 
+    @lru_cache(maxsize=512)
+    def head(self):
+        """
+        Return the top element of the tree
+        :return: XBRLElement
+        """
+        return self if self.parent is None else self.parent.head()
+
     def add_child(self, child, order=-1):
         """
         Essential function for establishing relationships between elements.
@@ -62,9 +71,6 @@ class XBRLElement:
             :param order: An optional argument to add order to child elements
         """
         if not isinstance(child, XBRLElement):
-            return
-
-        if child in self.children:
             return
 
         for already_child in self.children:
@@ -94,6 +100,7 @@ class XBRLElement:
         for new_child, order in other.children.items():
             self.add_child(new_child, order)
 
+    @lru_cache(maxsize=512)
     def visualize(self) -> str:
         """
         A function to create a printable representation of the tree from this point
@@ -105,6 +112,7 @@ class XBRLElement:
                 vis += child.visualize().replace('\n', '\n\t')
         return vis
 
+    @lru_cache(maxsize=512)
     def references(self) -> dict:
         """
         A quick utility function to pull and parse all bottom level references in the tree
@@ -115,6 +123,7 @@ class XBRLElement:
             ref_map.update(child.references())
         return ref_map
 
+    @lru_cache(maxsize=512)
     def ids(self):
         """
         Recursive function to access all uri label pairs
@@ -125,6 +134,7 @@ class XBRLElement:
             ids.update(child.ids())
         return ids
 
+    @lru_cache(maxsize=512)
     def search(self, term):
         """
         A search function to find specific node that has a uri or label that matches
@@ -139,33 +149,25 @@ class XBRLElement:
                 if child_search:
                     return child_search
 
-    def to_dict(self) -> dict:
+    def items(self):
         """
-        A recursive function to return a dictionary representation of the tree from this point downward
-        :return: A dictionary where keys are labels and cells are bottem level xbrl elements
+        A recursive function iterator allowing access to loop over the entire dataset as a list
+        :return: Yeilds  Uri, Label, Ref, Value
         """
-        dic = {self.uri: []}
-        if all(not child.children for child in self.children.keys()):
-            dic[self.uri] = [ele for ele in self.children.keys()]
-        else:
-            for ele, o in sorted(self.children.items(), key=lambda item: item[1] or -1):
-                dic.update(ele.to_dict())
-        return dic
+        yield self
+        for child in self.children.keys():
+            for ele in child.items():
+                yield ele
 
+    @lru_cache(maxsize=512)
     def to_json(self) -> dict:
         """
         Creates a json representation of the tree
         :return: A dictionary representation of the tree
         """
-        json = {'uri': self.uri,
-                'label': self.label,
-                'ref': self.ref,
-                'value': self.value,
-                'children': []}
-
+        json = {'uri': self.uri, 'label': self.label, 'ref': self.ref, 'value': self.value, 'children': []}
         for child in self.children:
             json['children'].append(child.to_json())
-
         return json
 
     @classmethod
@@ -176,10 +178,8 @@ class XBRLElement:
         :return:
         """
         element = cls(uri=data['uri'], label=data['label'], ref=data['ref'], value=data['value'])
-
         for child_data in data['children']:
             element.add_child(cls.from_json(child_data))
-
         return element
 
 
@@ -298,11 +298,17 @@ class XBRLAssembler:
             with open(file_path, 'r') as file:
                 data = {uri: XBRLElement.from_json(dat) for uri, dat in json.load(file).items()}
 
-        for uri, ele in self.xbrl_elements.items():
+        for uri, ele_header in self.xbrl_elements.items():
             if uri in data.keys():
-                data[uri].merge(ele)
+                for ele in ele_header.items():
+                    if ele.value is not None:
+                        continue
+
+                    json_ele = data[uri].search(ele.uri)
+                    if json_ele is not None:
+                        json_ele.merge(ele)
             else:
-                data[uri] = ele
+                data[uri] = ele_header
 
         with open(file_path, 'w+') as file:
             json.dump({uri: ele.to_json() for uri, ele in data.items()}, file)

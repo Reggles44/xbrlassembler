@@ -41,8 +41,9 @@ def assembler_test(xbrl_assembler: XBRLAssembler):
 
     for uri, ele in xbrl_assembler.xbrl_elements.items():
         assert isinstance(ele, XBRLElement)
-        assert isinstance(ele.search(re.compile('s')), XBRLElement)
-        assert isinstance(ele.to_dict(), dict)
+        assert isinstance(ele.search(re.compile('.')), XBRLElement)
+        assert isinstance(ele.head(), XBRLElement)
+        assert isinstance(ele.items(), Iterable)
         assert isinstance(ele.to_json(), dict)
         assert isinstance(ele.ids(), dict)
         assert isinstance(ele.references(), Iterable)
