@@ -43,7 +43,6 @@ def assembler_test(xbrl_assembler: XBRLAssembler):
 
     for uri, ele in xbrl_assembler.xbrl_elements.items():
         assert isinstance(ele, XBRLElement)
-        assert len(ele.children) > 0
         assert isinstance(ele.search(re.compile('.')), XBRLElement)
         assert isinstance(ele.head(), XBRLElement)
         assert isinstance(ele.items(), Iterable)
