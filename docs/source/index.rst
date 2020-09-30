@@ -14,7 +14,6 @@ Documentation
 
    assembler
    enums
-   errors
 
 Indices and tables
 ==================

@@ -149,6 +149,7 @@ class XBRLElement:
                 if child_search:
                     return child_search
 
+    @lru_cache(maxsize=512)
     def items(self):
         """
         A recursive function iterator allowing access to loop over the entire dataset as a list
@@ -167,7 +168,7 @@ class XBRLElement:
         """
         json = {'u': self.uri, 'l': self.label, 'r': self.ref, 'v': self.value, 'c': []}
         for child in self.children:
-            json['children'].append(child.to_json())
+            json['c'].append(child.to_json())
         return json
 
     @classmethod
@@ -283,6 +284,7 @@ class XBRLAssembler:
 
         with open(file_path, 'r') as file:
             data_dict = {uri: XBRLElement.from_json(ele) for uri, ele in json.load(file).items()}
+
         xbrl_assembler.xbrl_elements.update(data_dict)
 
         return xbrl_assembler
@@ -298,20 +300,19 @@ class XBRLAssembler:
             with open(file_path, 'r') as file:
                 data = {uri: XBRLElement.from_json(dat) for uri, dat in json.load(file).items()}
 
-        for uri, ele_header in self.xbrl_elements.items():
+        for uri, header_ele in self.xbrl_elements.items():
             if uri in data.keys():
-                for ele in ele_header.items():
-                    if ele.value is not None:
-                        continue
-
-                    json_ele = data[uri].search(ele.uri)
-                    if json_ele is not None:
-                        json_ele.merge(ele)
+                for data_ele in header_ele.items():
+                    if all(child.value is not None and len(child.children) == 0 for child in data_ele.children):
+                        search = data[uri].search(data_ele.uri)
+                        if search:
+                            search.merge(data_ele)
             else:
-                data[uri] = ele_header
+                data[uri] = header_ele
 
         with open(file_path, 'w+') as file:
-            json.dump({uri: ele.to_json() for uri, ele in data.items()}, file)
+            file.write(json.dumps({uri: ele.to_json() for uri, ele in data.items()}, indent=4))
+            #json.dump({uri: ele.to_json() for uri, ele in data.items()}, file)
 
     def uri(self, raw):
         """

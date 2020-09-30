@@ -12,19 +12,20 @@ from xbrlassembler import XBRLElement, FinancialStatement, XBRLAssembler
 logging.basicConfig(level=logging.ERROR)
 logging.getLogger('xbrlassembler')
 
-directory = os.path.abspath(os.path.join(os.getcwd(), 'test files'))
-os.makedirs(directory, exist_ok=True)
+test_files_directory = os.path.abspath(os.path.join(os.getcwd(), 'test files'))
+os.makedirs(test_files_directory, exist_ok=True)
 
 
-def delete_dir():
+def save_index(index_url):
+    id = index_url[index_url.rfind('/')+1:].replace("-index.htm", "")
+    directory = os.path.join(test_files_directory, id)
+    os.makedirs(directory, exist_ok=True)
+
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)
         if os.path.isfile(file_path):
             os.remove(file_path)
 
-
-def save_index(index_url):
-    delete_dir()
     index_soup = BeautifulSoup(requests.get(index_url).text, 'lxml')
 
     for row in index_soup.find('table', {'summary': 'Data Files'})('tr')[1:]:
@@ -34,13 +35,15 @@ def save_index(index_url):
         with open(os.path.abspath(os.path.join(directory, file_name)), 'w+') as file:
             file.write(requests.get(link).text)
 
+    return directory
+
 
 def assembler_test(xbrl_assembler: XBRLAssembler):
-    xbrl_assembler.get(FinancialStatement.DOCUMENT_INFORMATION)
     xbrl_assembler.get_all()
 
     for uri, ele in xbrl_assembler.xbrl_elements.items():
         assert isinstance(ele, XBRLElement)
+        assert len(ele.children) > 0
         assert isinstance(ele.search(re.compile('.')), XBRLElement)
         assert isinstance(ele.head(), XBRLElement)
         assert isinstance(ele.items(), Iterable)
