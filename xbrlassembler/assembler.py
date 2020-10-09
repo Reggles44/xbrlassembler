@@ -153,11 +153,24 @@ class XBRLElement:
     def items(self):
         """
         A recursive function iterator allowing access to loop over the entire dataset as a list
-        :return: Yeilds  Uri, Label, Ref, Value
+        :return: Yields  Uri, Label, Ref, Value
         """
         yield self
         for child in self.children.keys():
             for ele in child.items():
+                yield ele
+
+    @lru_cache(maxsize=512)
+    def data(self):
+        """
+        A recursive function iterator returning all low level elements
+        :return: Yields XBRLElement
+        """
+        if all(child.value is not None and len(child.children) == 0 for child in self.children):
+            yield self
+
+        for child in self.children.keys():
+            for ele in child.data():
                 yield ele
 
     @lru_cache(maxsize=512)
@@ -289,30 +302,32 @@ class XBRLAssembler:
 
         return xbrl_assembler
 
-    def to_json(self, file_path):
+    def to_json(self, file_path, mode='w+'):
         """
         A write function to store all data in a json file
         :param file_path: A string to a file
         """
-        data = {}
-
-        if os.path.isfile(file_path):
-            with open(file_path, 'r') as file:
-                data = {uri: XBRLElement.from_json(dat) for uri, dat in json.load(file).items()}
-
-        for uri, header_ele in self.xbrl_elements.items():
-            if uri in data.keys():
-                for data_ele in header_ele.items():
-                    if all(child.value is not None and len(child.children) == 0 for child in data_ele.children):
-                        search = data[uri].search(data_ele.uri)
-                        if search:
-                            search.merge(data_ele)
-            else:
-                data[uri] = header_ele
-
-        with open(file_path, 'w+') as file:
+        with open(file_path, mode) as file:
             file.write(json.dumps({uri: ele.to_json() for uri, ele in data.items()}, indent=4))
             #json.dump({uri: ele.to_json() for uri, ele in data.items()}, file)
+
+    def merge(self, *others):
+        for other in others:
+            if not isinstance(other, XBRLAssembler):
+                raise XBRLError(f"XBRLAssembler must merge with another XBRLAssembler not {type(other)}")
+
+            for uri, header_ele in self.xbrl_elements.items():
+                uri_prefix = uri.split('/')[-1]
+                uri_lookup = next((uri for uri in other.xbrl_elements.keys() if uri_prefix in uri), None)
+                if not uri_lookup:
+                    continue
+
+                other_doc = other.xbrl_elements[uri_lookup]
+
+                for other_ele in other_doc.data():
+                    search_ele = header_ele.search(other_ele.uri)
+                    if search_ele:
+                        search_ele.merge(other_ele)
 
     def uri(self, raw):
         """
