@@ -308,7 +308,7 @@ class XBRLAssembler:
         :param file_path: A string to a file
         """
         with open(file_path, mode) as file:
-            file.write(json.dumps({uri: ele.to_json() for uri, ele in data.items()}, indent=4))
+            file.write(json.dumps({uri: ele.to_json() for uri, ele in self.xbrl_elements.items()}, indent=4))
             #json.dump({uri: ele.to_json() for uri, ele in data.items()}, file)
 
     def merge(self, *others):
