@@ -313,6 +313,9 @@ class XBRLAssembler:
 
     def merge(self, *others):
         for other in others:
+            if other is self:
+                continue
+
             if not isinstance(other, XBRLAssembler):
                 raise XBRLError(f"XBRLAssembler must merge with another XBRLAssembler not {type(other)}")
 
@@ -328,6 +331,9 @@ class XBRLAssembler:
                     search_ele = header_ele.search(other_ele.uri)
                     if search_ele:
                         search_ele.merge(other_ele)
+                    else:
+                        logger.debug(f"XBRLAssembler merge failed on search "
+                                     f"(header_ele={header_ele}, other_ele={other_ele})")
 
     def uri(self, raw):
         """
