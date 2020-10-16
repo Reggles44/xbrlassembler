@@ -334,6 +334,7 @@ class XBRLAssembler:
                     else:
                         logger.debug(f"XBRLAssembler merge failed on search "
                                      f"(header_ele={header_ele}, other_ele={other_ele})")
+        return self
 
     def uri(self, raw):
         """
