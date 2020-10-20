@@ -1,9 +1,5 @@
-import os
-
-import pytest
-
-from tests import assembler_test, test_files_directory, save_index
-from xbrlassembler import XBRLAssembler, XBRLError
+from tests import assembler_test
+from xbrlassembler import XBRLAssembler
 
 
 def test_merge():

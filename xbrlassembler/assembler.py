@@ -41,7 +41,6 @@ class XBRLElement:
         except (TypeError, ValueError):
             if isinstance(value, str):
                 self.value = value.replace('\n', '')
-            logger.info(f"XBRLElement value convert to float failure for {self.value}")
 
         self.children = {}
         self.parent = None
@@ -204,6 +203,8 @@ class XBRLAssembler:
     uri_re = re.compile(r'(?:lab_)?((us-gaap|source|dei|[a-z]{3,4})[_:][A-Za-z]{5,})', re.IGNORECASE)
 
     def __init__(self, *args, **kwargs):
+        logger.debug(f"Created Assembler (*args={args}, **kwargs={kwargs})")
+
         self.args = args
         self.kwargs = kwargs
 
@@ -323,7 +324,7 @@ class XBRLAssembler:
                 uri_prefix = uri.split('/')[-1]
                 uri_lookup = next((uri for uri in other.xbrl_elements.keys() if uri_prefix in uri), None)
                 if not uri_lookup:
-                    continue
+                    logger.debug(f"Merge failed on document search (uri_prefix={uri_prefix})")
 
                 other_doc = other.xbrl_elements[uri_lookup]
 
@@ -332,8 +333,7 @@ class XBRLAssembler:
                     if search_ele:
                         search_ele.merge(other_ele)
                     else:
-                        logger.debug(f"XBRLAssembler merge failed on search "
-                                     f"(header_ele={header_ele}, other_ele={other_ele})")
+                        logger.debug(f"Merge failed on element search (header_ele={header_ele}, other_ele={other_ele})")
         return self
 
     def uri(self, raw):

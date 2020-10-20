@@ -2,15 +2,15 @@ import logging
 import os
 import re
 from collections.abc import Iterable
-from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
 
-from xbrlassembler import XBRLElement, FinancialStatement, XBRLAssembler
+from xbrlassembler import XBRLElement, XBRLAssembler
 
 logging.basicConfig(level=logging.ERROR)
-logging.getLogger('xbrlassembler')
+logging.getLogger('xbrlassembler').setLevel(logging.DEBUG)
+logging.getLogger('xbrlassembler').debug("Starting Test")
 
 test_files_directory = os.path.abspath(os.path.join(os.getcwd(), 'test files'))
 os.makedirs(test_files_directory, exist_ok=True)
