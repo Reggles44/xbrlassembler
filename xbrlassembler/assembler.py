@@ -323,8 +323,9 @@ class XBRLAssembler:
             for uri, header_ele in self.xbrl_elements.items():
                 uri_prefix = uri.split('/')[-1]
                 uri_lookup = next((uri for uri in other.xbrl_elements.keys() if uri_prefix in uri), None)
-                if not uri_lookup:
+                if uri_lookup is None:
                     logger.debug(f"Merge failed on document search (uri_prefix={uri_prefix})")
+                    continue
 
                 other_doc = other.xbrl_elements[uri_lookup]
 
