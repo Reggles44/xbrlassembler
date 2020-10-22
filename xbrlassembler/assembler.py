@@ -216,6 +216,8 @@ class XBRLAssembler:
 
         self.ref = None
 
+    def __repr__(self):
+        return f"XBRLAssembler ({list(self.xbrl_elements.keys())})"
 
     @classmethod
     def from_sec_index(cls, index_url, ref_doc=XBRLType.PRE, *args, **kwargs):
@@ -319,6 +321,8 @@ class XBRLAssembler:
 
             if not isinstance(other, XBRLAssembler):
                 raise XBRLError(f"XBRLAssembler must merge with another XBRLAssembler not {type(other)}")
+
+            logger.debug(f"Merging {other}")
 
             for uri, header_ele in self.xbrl_elements.items():
                 uri_prefix = uri.split('/')[-1]
