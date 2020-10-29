@@ -13,8 +13,13 @@ def test_merge():
 
     assemblers = [XBRLAssembler.from_sec_index(url) for url in urls]
 
-    main = assemblers[0]
+    main = assemblers[0].merge(*assemblers[1:])
+
     for other in assemblers[1:]:
         main.merge(other)
 
     assembler_test(main)
+
+
+if __name__ == '__main__':
+    test_merge()

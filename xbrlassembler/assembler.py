@@ -30,7 +30,7 @@ class XBRLElement:
     """
     def __init__(self, uri, label=None, value=None, ref=None):
         """Constructor Method"""
-        self.uri = uri
+        self.uri = uri.split("/")[-1]
         self.label = label
         self.ref = ref
         self.value = value
@@ -216,6 +216,13 @@ class XBRLAssembler:
 
         self.ref = None
 
+        for ele in self.xbrl_elements.values():
+            if not ele.children:
+                try:
+                    self.__assemble(ele)
+                except XBRLError as e:
+                    logger.debug(e)
+
     def __repr__(self):
         return f"XBRLAssembler ({list(self.xbrl_elements.keys())})"
 
@@ -325,20 +332,26 @@ class XBRLAssembler:
             logger.debug(f"Merging {other}")
 
             for uri, header_ele in self.xbrl_elements.items():
-                uri_prefix = uri.split('/')[-1]
-                uri_lookup = next((uri for uri in other.xbrl_elements.keys() if uri_prefix in uri), None)
-                if uri_lookup is None:
-                    logger.debug(f"Merge failed on document search (uri_prefix={uri_prefix})")
-                    continue
+                if uri in other.xbrl_elements.keys():
+                    other_doc = other.xbrl_elements[uri]
+                else:
+                    search_check = lambda regex, ele: re.search(regex, ele.uri) or re.search(regex, ele.label)
+                    fin_stmt = next((stmt for stmt in FinancialStatement if search_check(stmt.value, header_ele)), None)
+                    if fin_stmt == FinancialStatement.NOTE:
+                        continue
+                    other_doc = other.get(fin_stmt) if fin_stmt is not None else other.get(header_ele.uri)
 
-                other_doc = other.xbrl_elements[uri_lookup]
+                if other_doc is None:
+                    logger.debug(f"Merge failed on document search {uri}")
+                    continue
 
                 for other_ele in other_doc.data():
                     search_ele = header_ele.search(other_ele.uri)
                     if search_ele:
                         search_ele.merge(other_ele)
                     else:
-                        logger.debug(f"Merge failed on element search (header_ele={header_ele}, other_ele={other_ele})")
+                        logger.debug(f"Merge failed on element search (header_ele={header_ele.uri}, other_ele={other_ele})")
+
         return self
 
     def uri(self, raw):
@@ -400,19 +413,6 @@ class XBRLAssembler:
                               ref=node['contextref'])
             self.cells[uri].append(ele)
 
-    def get_all(self):
-        """
-        A shortcut command to parse all documents against the reference document
-        """
-        for ele in self.xbrl_elements.values():
-            if not ele.children:
-                try:
-                    self.__assemble(ele)
-                except XBRLError as e:
-                    logger.debug(e)
-
-        return self.xbrl_elements
-
     def get(self, search) -> XBRLElement:
         """
         Main access function that will take a variety of search criteria and attempt to create and
@@ -422,7 +422,7 @@ class XBRLAssembler:
 
         :return: class:`xbrlassembler.XBRLElement` for the top of a tree representing the requested document
         """
-        search_data = sorted(self.xbrl_elements.items(), key=lambda item: item[1].ref)
+        search_data = sorted(self.xbrl_elements.values(), key=lambda item: item.ref)
 
         if isinstance(search, re.Pattern) or isinstance(search, str):
             search_term = search
@@ -432,15 +432,8 @@ class XBRLAssembler:
             raise ValueError(f"XBRLAssembler.get() search term should be "
                              f"re.Pattern, string, or FinancialStatement not {search}")
 
-        doc_ele = next((ele for uri, ele in search_data if re.search(search_term, uri) or re.search(search_term, ele.label)))
-        if doc_ele is None:
-            raise XBRLError(f"No match found for {search} in names.\n\t"
-                            f"Names available {[name for name in self.xbrl_elements.keys()]}]")
-
-        if not doc_ele.children:
-            self.__assemble(doc_ele)
-
-        return doc_ele
+        doc_search = lambda term, ele: re.search(search_term, ele.uri) or re.search(search_term, ele.label)
+        return next((ele for ele in search_data if doc_search(search_term, ele)), None)
 
     def __assemble(self, doc_ele):
         if self.ref is None:

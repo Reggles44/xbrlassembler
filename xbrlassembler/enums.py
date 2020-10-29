@@ -9,6 +9,9 @@ class FinancialStatement(Enum):
     INCOME_STATEMENT = re.compile(r"operation|income|earnings|revenues|loss", re.IGNORECASE)
     BALANCE_SHEET = re.compile(r"balance|condition|position|assets", re.IGNORECASE)
     DOCUMENT_INFORMATION = re.compile(r"cover.page|information", re.IGNORECASE)
+    STOCK_HOLDER = re.compile(r"stockholder", re.IGNORECASE)
+    CASH_FLOW = re.compile(r"cash.flow", re.IGNORECASE)
+    NOTE = re.compile(r"statement.note", re.IGNORECASE)
 
 
 class XBRLType(Enum):
