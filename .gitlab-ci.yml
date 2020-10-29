@@ -17,8 +17,6 @@ pylint:
   script:
     - python -m pip install --upgrade pylint
     - pylint xbrlassembler -E
-  only:
-    - dev
 
 test:python3.7:
   stage: test
@@ -29,8 +27,6 @@ test:python3.7:
     - coverage run --source=xbrlassembler -m pytest
     - coverage report -m
   coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
-  only:
-    - dev
 
 deploy_pypi:
   stage: deploy
