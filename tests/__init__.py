@@ -47,3 +47,6 @@ def assembler_test(xbrl_assembler: XBRLAssembler):
         assert isinstance(ele.to_json(), dict)
         assert isinstance(ele.ids(), dict)
         assert isinstance(ele.references(), Iterable)
+        assert isinstance(ele.visualize(), str)
+        assert isinstance(ele.ids(), dict)
+        assert isinstance([x for x in ele.items()], list)

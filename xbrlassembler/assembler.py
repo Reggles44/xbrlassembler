@@ -202,7 +202,7 @@ class XBRLAssembler:
     """
     uri_re = re.compile(r'(?:lab_)?((us-gaap|source|dei|[a-z]{3,4})[_:][A-Za-z]{5,})', re.IGNORECASE)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, schema=None, label=None, data=None, ref=None, *args, **kwargs):
         logger.debug(f"Created Assembler (*args={args}, **kwargs={kwargs})")
 
         self.args = args
@@ -214,12 +214,21 @@ class XBRLAssembler:
         self.labels = {}
         self.cells = collections.defaultdict(list)
 
-        self.ref = None
+        self.ref = ref
 
-        for ele in self.xbrl_elements.values():
+        if schema is not None:
+            self.parse_schema(schema)
+
+        if label is not None:
+            self.parse_labels(label)
+
+        if data is not None:
+            self.parse_cells(data)
+
+        for uri, ele in self.xbrl_elements.items():
             if not ele.children:
                 try:
-                    self.__assemble(ele)
+                    self.__assemble(uri, ele)
                 except XBRLError as e:
                     logger.debug(e)
 
@@ -253,15 +262,12 @@ class XBRLAssembler:
             file_map[XBRLType.get(row[3].text)] = soup
 
         try:
-            xbrl_assembler = cls(*args, **kwargs)
-
             ref = next((ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map))
-            xbrl_assembler.ref = file_map[ref]
-
-            xbrl_assembler.parse_schema(file_map[XBRLType.SCHEMA])
-            xbrl_assembler.parse_labels(file_map[XBRLType.LABEL])
-            xbrl_assembler.parse_cells(file_map[XBRLType.DATA])
-
+            xbrl_assembler = cls(schema=file_map[XBRLType.SCHEMA],
+                                 label=file_map[XBRLType.LABEL],
+                                 data=file_map[XBRLType.DATA],
+                                 ref=file_map[ref],
+                                 *args, **kwargs)
             return xbrl_assembler
         except KeyError:
             raise XBRLError(f"Could not find all document from {index_url}")
@@ -285,14 +291,12 @@ class XBRLAssembler:
                 file_map[XBRLType.get(item)] = BeautifulSoup(open(os.path.join(directory, item), 'r'), 'lxml')
 
         try:
-            xbrl_assembler = cls(*args, **kwargs)
-
             ref = next((ref for ref in [ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC] if ref in file_map))
-            xbrl_assembler.ref = file_map[ref]
-
-            xbrl_assembler.parse_schema(file_map[XBRLType.SCHEMA])
-            xbrl_assembler.parse_labels(file_map[XBRLType.LABEL])
-            xbrl_assembler.parse_cells(file_map[XBRLType.DATA])
+            xbrl_assembler = cls(schema=file_map[XBRLType.SCHEMA],
+                                 label=file_map[XBRLType.LABEL],
+                                 data=file_map[XBRLType.DATA],
+                                 ref=file_map[ref],
+                                 *args, **kwargs)
 
             return xbrl_assembler
         except KeyError:
@@ -435,14 +439,14 @@ class XBRLAssembler:
         doc_search = lambda term, ele: re.search(search_term, ele.uri) or re.search(search_term, ele.label)
         return next((ele for ele in search_data if doc_search(search_term, ele)), None)
 
-    def __assemble(self, doc_ele):
+    def __assemble(self, uri, doc_ele):
         if self.ref is None:
             return
 
         # Find desired section in reference document
-        def_link = self.ref.find(re.compile(r'link', re.IGNORECASE), attrs={'xlink:role': doc_ele.uri})
+        def_link = self.ref.find(re.compile(r'link', re.IGNORECASE), attrs={'xlink:role': uri})
         if not def_link:
-            raise XBRLError(f"Refernce document doesn't contain any information for {doc_ele.uri}")
+            raise XBRLError(f"Refernce document doesn't contain any information for {uri}")
 
         # Pull all elements and create XBRLElements out of them
         eles = {}

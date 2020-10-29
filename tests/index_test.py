@@ -8,7 +8,6 @@ from tests import assembler_test
 from xbrlassembler import XBRLAssembler, XBRLError
 
 
-@pytest.mark.xfail(raises=XBRLError)
 def test_index():
     crawler = requests.get('https://www.sec.gov/Archives/edgar/full-index/crawler.idx')
     files = []

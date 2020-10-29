@@ -1,7 +1,7 @@
 import re
-from datetime import datetime
 from enum import Enum
 
+from datetime import datetime
 
 
 class FinancialStatement(Enum):
@@ -35,9 +35,9 @@ class XBRLType(Enum):
             if any(t in item_ref for t in xbrl_type.value):
                 return xbrl_type
 
-
+_year_digit = str(datetime.now().year)[-1]
 _re_map = {'%Y': r'(2[0-2][0-9]{2})',
-           '%y': r'(0[1-9]|[1-2][0-9])',
+           '%y': fr'(0[1-9]|1[0-9]|2[0-{_year_digit}])',
            '%m': r'(0[1-9]|1[0-2])',
            '%d': r'(0[1-9]|[1-2][0-9]|30|31)',
            '%b': r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'}
@@ -94,7 +94,7 @@ class DateParser(Enum):
 
         date_format = cls.find_format(string)
         if not date_format:
-            return tuple((None,))
+            return
 
         dates = []
         for raw_date in re.findall(date_format.pattern(), string):
