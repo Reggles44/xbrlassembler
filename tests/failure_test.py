@@ -42,8 +42,11 @@ def test_failure():
         soup = BeautifulSoup(requests.get("https://www.sec.gov" + row[2].find('a')['href']).text, 'lxml')
         file_map[XBRLType.get(row[3].text)] = soup
 
-    assert makes_exception(XBRLAssembler, schema="", labels="", data="")
-    assert makes_exception(XBRLAssembler, schema=file_map[XBRLType.SCHEMA], labels="", data="")
-    assert makes_exception(XBRLAssembler, schema=file_map[XBRLType.SCHEMA], labels=file_map[XBRLType.LABEL], data="")
-    makes_exception(XBRLAssembler, schema=file_map[XBRLType.SCHEMA], labels=file_map[XBRLType.LABEL], data=file_map[XBRLType.DATA], ref=None)
+    fm0 = {}
+    fm1 = {XBRLType.SCHEMA: "None"}
+    fm2 = {XBRLType.SCHEMA: file_map[XBRLType.SCHEMA], XBRLType.LABEL: "None"}
+    fm3 = {XBRLType.SCHEMA: file_map[XBRLType.SCHEMA], XBRLType.LABEL: file_map[XBRLType.LABEL], XBRLType.DATA: "None"}
+    fm4 = {XBRLType.SCHEMA: file_map[XBRLType.SCHEMA], XBRLType.LABEL: file_map[XBRLType.LABEL], XBRLType.DATA: file_map[XBRLType.DATA], XBRLType.PRE: "None"}
 
+    for fm in [fm0, fm1, fm2, fm3, fm4]:
+        assert makes_exception(XBRLAssembler._mta, file_map=fm, info=None, ref_doc=XBRLType.PRE)
