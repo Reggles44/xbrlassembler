@@ -4,6 +4,7 @@ import logging
 import os
 import re
 from functools import lru_cache
+from typing import Generator
 
 import requests
 from bs4 import BeautifulSoup
@@ -52,7 +53,7 @@ class XBRLElement:
         return f"{self.uri} (label={self.label}, ref={self.ref}, value={self.value})"
 
     @lru_cache(maxsize=512)
-    def head(self):
+    def head(self) -> "XBRLElement":
         """
         Return the top element of the tree
         :return: XBRLElement
@@ -123,7 +124,7 @@ class XBRLElement:
         return ref_map
 
     @lru_cache(maxsize=512)
-    def ids(self):
+    def ids(self) -> dict[str, str]:
         """
         Recursive function to access all uri label pairs
         :return: A dictionary where keys are uri strings and values are label strings or None is there is no label
@@ -134,7 +135,7 @@ class XBRLElement:
         return ids
 
     @lru_cache(maxsize=512)
-    def search(self, term):
+    def search(self, term) -> "XBRLElement":
         """
         A search function to find specific node that has a uri or label that matches
         :param term: String, re.pattern, or anything that can go into a search
@@ -149,7 +150,7 @@ class XBRLElement:
                     return child_search
 
     @lru_cache(maxsize=512)
-    def items(self):
+    def items(self) -> Generator[str, str, str, int]:
         """
         A recursive function iterator allowing access to loop over the entire dataset as a list
         :return: Yields  Uri, Label, Ref, Value
@@ -160,7 +161,7 @@ class XBRLElement:
                 yield ele
 
     @lru_cache(maxsize=512)
-    def data(self):
+    def data(self) -> Generator["XBRLElement"]:
         """
         A recursive function iterator returning all low level elements
         :return: Yields XBRLElement
@@ -325,7 +326,7 @@ class XBRLAssembler:
             file.write(json.dumps({uri: ele.to_json() for uri, ele in self.xbrl_elements.items()}, indent=4))
             #json.dump({uri: ele.to_json() for uri, ele in data.items()}, file)
 
-    def merge(self, *others):
+    def merge(self, *others) -> "XBRLAssembler":
         for other in others:
             if other is self:
                 continue
