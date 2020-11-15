@@ -124,7 +124,7 @@ class XBRLElement:
         return ref_map
 
     @lru_cache(maxsize=512)
-    def ids(self) -> dict[str, str]:
+    def ids(self) -> dict:
         """
         Recursive function to access all uri label pairs
         :return: A dictionary where keys are uri strings and values are label strings or None is there is no label
@@ -150,7 +150,7 @@ class XBRLElement:
                     return child_search
 
     @lru_cache(maxsize=512)
-    def items(self) -> Generator[str, str, str, int]:
+    def items(self):
         """
         A recursive function iterator allowing access to loop over the entire dataset as a list
         :return: Yields  Uri, Label, Ref, Value
@@ -161,7 +161,7 @@ class XBRLElement:
                 yield ele
 
     @lru_cache(maxsize=512)
-    def data(self) -> Generator["XBRLElement"]:
+    def data(self):
         """
         A recursive function iterator returning all low level elements
         :return: Yields XBRLElement
@@ -185,7 +185,7 @@ class XBRLElement:
         return json
 
     @classmethod
-    def from_json(cls, data: dict):
+    def from_json(cls, data):
         """
         Creates an XBRLElement tree from json data
         :param data: A dict of data loaded from a json file
