@@ -95,8 +95,5 @@ class DateParser(Enum):
         if not date_format:
             return
 
-        dates = []
-        for raw_date in re.findall(date_format.pattern(), string):
-            dates.append(datetime.strptime(f"{raw_date[1]}{raw_date[2]}{raw_date[3]}", date_format.value))
-
-        return tuple(dates)
+        make_date = lambda res: datetime.strptime("".join(res.groups()[1:]), date_format.value)
+        return [make_date(res) for res in re.findall(date_format.pattern(), string)]
