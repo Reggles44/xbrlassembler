@@ -95,5 +95,5 @@ class DateParser(Enum):
         if not date_format:
             return
 
-        make_date = lambda res: datetime.strptime("".join(res.groups()[1:]), date_format.value)
+        make_date = lambda res: datetime.strptime("".join(res[1:]), date_format.value)
         return [make_date(res) for res in re.findall(date_format.pattern(), string)]
