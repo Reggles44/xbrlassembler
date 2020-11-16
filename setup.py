@@ -5,7 +5,7 @@ with open("README.rst", "r") as fh:
 
 setuptools.setup(
     name="XBRLAssembler",
-    version="0.11.3",
+    version="0.11.4",
     author="Reggles",
     author_email="reginaldbeakes@gmail.com",
     description="An assembler for XBRL Documents into pandas",
