@@ -4,7 +4,6 @@ import logging
 import os
 import re
 from functools import lru_cache
-from typing import Generator
 
 import requests
 from bs4 import BeautifulSoup

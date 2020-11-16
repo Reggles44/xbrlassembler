@@ -1,7 +1,5 @@
-import pytest
-
 from tests import assembler_test
-from xbrlassembler import XBRLAssembler, XBRLError, FinancialStatement
+from xbrlassembler import XBRLAssembler, FinancialStatement
 
 
 def test_assembler():

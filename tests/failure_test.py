@@ -1,9 +1,7 @@
-import re
-
 import requests
 from bs4 import BeautifulSoup
 
-from xbrlassembler import XBRLElement, XBRLAssembler, DateParser, XBRLType
+from xbrlassembler import XBRLElement, XBRLAssembler, XBRLType
 
 
 def makes_exception(func, *args, **kwargs):

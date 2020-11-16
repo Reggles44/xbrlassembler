@@ -1,7 +1,6 @@
 import re
-from enum import Enum
-
 from datetime import datetime
+from enum import Enum
 
 
 class FinancialStatement(Enum):
