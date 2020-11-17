@@ -34,6 +34,7 @@ class XBRLType(Enum):
             if any(t in item_ref for t in xbrl_type.value):
                 return xbrl_type
 
+
 _year_digit = str(datetime.now().year)[-1]
 _re_map = {'%Y': r'(2[0-2][0-9]{2})',
            '%y': fr'(0[1-9]|1[0-9]|2[0-{_year_digit}])',
@@ -44,6 +45,7 @@ _quarter_map = {'Q1': '0331',
                 'Q2': '0630',
                 'Q3': '0930',
                 'Q4': '1231'}
+
 
 class DateParser(Enum):
     """
@@ -56,11 +58,9 @@ class DateParser(Enum):
     MONTH_DAY_YEAR = '%m%d%Y'
     DAY_MONTH_HALF_YEAR = '%d%b%Y'
 
-
     def pattern(self):
         """
         Creates a regex pattern based on a datetime string format
-        :param date_pattern: A datetime string format
         :return: A regex compile of the assembled term
         """
         re_list = [_re_map[f'%{char}'] for char in str(self.value).split('%') if char]
@@ -78,6 +78,10 @@ class DateParser(Enum):
                 return datetype
 
     @classmethod
+    def make_date(cls, date_format, res):
+        return datetime.strptime(f"{res[1]}{res[2]}{res[3]}", date_format.value)
+
+    @classmethod
     def parse(cls, string):
         """
         Overarching parse function including all other functions
@@ -85,15 +89,10 @@ class DateParser(Enum):
         :param string: Raw string that might include dates
         :return: Tuple of class:`datetime.datetime` objects found
         """
-        if string is None:
-            return
-
         for qtr, month_day in _quarter_map.items():
             string = string.replace(qtr, month_day)
 
         date_format = cls.find_format(string)
-        if not date_format:
-            return
+        if date_format:
 
-        make_date = lambda res: datetime.strptime("".join(res[1:]), date_format.value)
-        return tuple(make_date(res) for res in re.findall(date_format.pattern(), string))
+            return tuple(cls.make_date(res) for res in re.findall(date_format.pattern(), string))

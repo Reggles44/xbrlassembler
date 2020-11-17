@@ -14,7 +14,7 @@ from xbrlassembler.error import XBRLError
 logger = logging.getLogger('xbrlassembler')
 
 
-def uri(raw):
+def urire(raw):
     """
     Used to standardize uri's across mutliple documents
     :param raw: A non standard URI string
@@ -84,7 +84,7 @@ class XBRLElement:
             return
 
         for already_child in self.children:
-            if already_child.uri == child.uri and already_child.ref == child.ref:
+            if already_child.urire == child.uri and already_child.ref == child.ref:
                 self.merge(child)
                 return
 
@@ -189,10 +189,10 @@ class XBRLElement:
         Creates a json representation of the tree
         :return: A dictionary representation of the tree
         """
-        json = {'u': self.uri, 'l': self.label, 'r': self.ref, 'v': self.value, 'c': []}
+        json_data = {'u': self.uri, 'l': self.label, 'r': self.ref, 'v': self.value, 'c': []}
         for child in self.children:
-            json['c'].append(child.to_json())
-        return json
+            json_data['c'].append(child.to_json())
+        return json_data
 
     @classmethod
     def from_json(cls, data):
@@ -323,10 +323,10 @@ class XBRLAssembler:
         """
         A write function to store all data in a json file
         :param file_path: A string to a file
+        :param mode: mode string for open
         """
         with open(file_path, mode) as file:
             file.write(json.dumps({uri: ele.to_json() for uri, ele in self.xbrl_elements.items()}, indent=4))
-            #json.dump({uri: ele.to_json() for uri, ele in data.items()}, file)
 
     def merge(self, *others) -> "XBRLAssembler":
         for other in others:
@@ -339,11 +339,12 @@ class XBRLAssembler:
             logger.debug(f"Merging {other}")
 
             for uri, header_ele in self.xbrl_elements.items():
-                search_check = lambda regex, ele: re.search(regex, ele.uri) or re.search(regex, ele.label)
+                def search_check(regex, ele):
+                    return re.search(regex, ele.urire) or re.search(regex, ele.label)
                 fin_stmt = next((stmt for stmt in FinancialStatement if search_check(stmt.value, header_ele)), None)
                 if fin_stmt == FinancialStatement.NOTE:
                     continue
-                other_doc = other.get(fin_stmt) if fin_stmt is not None else other.get(header_ele.uri)
+                other_doc = other.get(fin_stmt) if fin_stmt is not None else other.get(header_ele.urire)
 
                 if other_doc is None:
                     logger.debug(f"Merge failed on document search {uri}")
@@ -354,7 +355,8 @@ class XBRLAssembler:
                     if search_ele:
                         search_ele.merge(other_ele)
                     else:
-                        logger.debug(f"Merge failed on element search (header_ele={header_ele.uri}, other_ele={other_ele})")
+                        logger.debug(f"Merge failed on element search "
+                                     f"(header_ele={header_ele.urire}, other_ele={other_ele})")
 
         return self
 
@@ -382,8 +384,8 @@ class XBRLAssembler:
         :return:
         """
         for lab in label_soup.find_all(re.compile('label$', re.IGNORECASE)):
-            u = uri(lab['xlink:label']).lower()
-            self.labels[u if u != lab['xlink:label'] else uri(lab['id'])] = lab.text
+            u = urire(lab['xlink:label']).lower()
+            self.labels[u if u != lab['xlink:label'] else urire(lab['id'])] = lab.text
 
     def parse_cells(self, data_soup):
         """
@@ -464,5 +466,6 @@ class XBRLAssembler:
             raise ValueError(f"XBRLAssembler.get() search term should be "
                              f"re.Pattern, string, or FinancialStatement not {search}")
 
-        doc_search = lambda term, ele: re.search(search_term, ele.uri) or re.search(search_term, ele.label)
+        def doc_search(term, ele):
+            return re.search(term, ele.urire) or re.search(term, ele.label)
         return next((ele for ele in search_data if doc_search(search_term, ele)), None)
