@@ -35,6 +35,8 @@ class XBRLElement:
         self.ref = ref
         self.value = value
 
+        self.date = None
+
         # Convert to float to remove any issues with comparing string representations of numbers
         try:
             self.value = float(value)
@@ -117,7 +119,10 @@ class XBRLElement:
         A quick utility function to pull and parse all bottom level references in the tree
         :return: A dict mapping old references to parsed ones
         """
-        ref_map = {self.ref: DateParser.parse(self.ref)}
+        if self.date is None:
+            self.date = DateParser.parse(self.ref)
+
+        ref_map = {self.ref: self.date}
         for child in self.children:
             ref_map.update(child.references())
         return ref_map
