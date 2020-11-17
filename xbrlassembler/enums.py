@@ -96,4 +96,4 @@ class DateParser(Enum):
             return
 
         make_date = lambda res: datetime.strptime("".join(res[1:]), date_format.value)
-        return [make_date(res) for res in re.findall(date_format.pattern(), string)]
+        return tuple(make_date(res) for res in re.findall(date_format.pattern(), string))
