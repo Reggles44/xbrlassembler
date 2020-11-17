@@ -114,7 +114,7 @@ class XBRLElement:
         return vis
 
     @lru_cache(maxsize=512)
-    def references(self) -> dict:
+    def refs(self) -> dict:
         """
         A quick utility function to pull and parse all bottom level references in the tree
         :return: A dict mapping old references to parsed ones
@@ -124,7 +124,7 @@ class XBRLElement:
 
         ref_map = {self.ref: self.date}
         for child in self.children:
-            ref_map.update(child.references())
+            ref_map.update(child.refs())
         return ref_map
 
     @lru_cache(maxsize=512)
