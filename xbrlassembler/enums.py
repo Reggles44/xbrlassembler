@@ -95,4 +95,4 @@ class DateParser(Enum):
         date_format = cls.find_format(string)
         if date_format:
 
-            return tuple(cls.make_date(res) for res in re.findall(date_format.pattern(), string))
+            return tuple(cls.make_date(date_format, res) for res in re.findall(date_format.pattern(), string))
