@@ -7,4 +7,3 @@ def test_date():
 
     assert DateParser.parse(valid_date) is not None
     assert DateParser.parse(invalid_date) is None
-    assert DateParser.parse(None) is None

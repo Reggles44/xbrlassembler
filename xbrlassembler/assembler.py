@@ -14,17 +14,6 @@ from xbrlassembler.error import XBRLError
 logger = logging.getLogger('xbrlassembler')
 
 
-def urire(raw):
-    """
-    Used to standardize uri's across mutliple documents
-    :param raw: A non standard URI string
-    :return: A parsed string or raw
-    """
-    uri_re = re.compile(r'(?:lab_)?((us-gaap|source|dei|[a-z]{3,4})[_:][A-Za-z]{5,})', re.IGNORECASE)
-    uri_search = re.search(uri_re, raw)
-    return uri_search.group(1) if uri_search else raw
-
-
 class XBRLElement:
     """
     An element to represent a single point on a tree.
@@ -84,7 +73,7 @@ class XBRLElement:
             return
 
         for already_child in self.children:
-            if already_child.urire == child.uri and already_child.ref == child.ref:
+            if already_child.uri == child.uri and already_child.ref == child.ref:
                 self.merge(child)
                 return
 
@@ -340,11 +329,11 @@ class XBRLAssembler:
 
             for uri, header_ele in self.xbrl_elements.items():
                 def search_check(regex, ele):
-                    return re.search(regex, ele.urire) or re.search(regex, ele.label)
+                    return re.search(regex, ele.uri) or re.search(regex, ele.label)
                 fin_stmt = next((stmt for stmt in FinancialStatement if search_check(stmt.value, header_ele)), None)
                 if fin_stmt == FinancialStatement.NOTE:
                     continue
-                other_doc = other.get(fin_stmt) if fin_stmt is not None else other.get(header_ele.urire)
+                other_doc = other.get(fin_stmt) if fin_stmt is not None else other.get(header_ele.uri)
 
                 if other_doc is None:
                     logger.debug(f"Merge failed on document search {uri}")
@@ -356,7 +345,7 @@ class XBRLAssembler:
                         search_ele.merge(other_ele)
                     else:
                         logger.debug(f"Merge failed on element search "
-                                     f"(header_ele={header_ele.urire}, other_ele={other_ele})")
+                                     f"(header_ele={header_ele.uri}, other_ele={other_ele})")
 
         return self
 
@@ -383,9 +372,14 @@ class XBRLAssembler:
         :param label_soup: A `BeautifulSoup` object
         :return:
         """
+        def uri_search(raw):
+            uri_re = re.compile(r'(?:lab_)?((us-gaap|source|dei|[a-z]{3,4})[_:][A-Za-z]{5,})', re.IGNORECASE)
+            uris = re.search(uri_re, raw)
+            return uris.group(1) if uris else raw
+
         for lab in label_soup.find_all(re.compile('label$', re.IGNORECASE)):
-            u = urire(lab['xlink:label']).lower()
-            self.labels[u if u != lab['xlink:label'] else urire(lab['id'])] = lab.text
+            u = uri_search(lab['xlink:label']).lower()
+            self.labels[u if u != lab['xlink:label'] else uri_search(lab['id'])] = lab.text
 
     def parse_cells(self, data_soup):
         """
@@ -467,5 +461,5 @@ class XBRLAssembler:
                              f"re.Pattern, string, or FinancialStatement not {search}")
 
         def doc_search(term, ele):
-            return re.search(term, ele.urire) or re.search(term, ele.label)
+            return re.search(term, ele.uri) or re.search(term, ele.label)
         return next((ele for ele in search_data if doc_search(search_term, ele)), None)

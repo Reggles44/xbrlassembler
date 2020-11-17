@@ -89,10 +89,12 @@ class DateParser(Enum):
         :param string: Raw string that might include dates
         :return: Tuple of class:`datetime.datetime` objects found
         """
+        if string is None:
+            return
+
         for qtr, month_day in _quarter_map.items():
             string = string.replace(qtr, month_day)
 
         date_format = cls.find_format(string)
         if date_format:
-
             return tuple(cls.make_date(date_format, res) for res in re.findall(date_format.pattern(), string))
