@@ -47,44 +47,33 @@ _quarter_map = {'Q1': '0331',
                 'Q4': '1231'}
 
 
+
+
+
 class DateParser(Enum):
     """
     Functional enum that ties together regex with datetime format strings to
         allow for parsing strings into datetime objects
     """
-    MONTH_STRING_DAY_YEAR = '%b%d%Y'
     YEAR_MONTH_DAY = '%Y%m%d'
-    YEAR_HALF_MONTH_DAY = '%y%m%d'
     MONTH_DAY_YEAR = '%m%d%Y'
     DAY_MONTH_HALF_YEAR = '%d%b%Y'
+    YEAR_HALF_MONTH_DAY = '%y%m%d'
+    MONTH_STRING_DAY_YEAR = '%b%d%Y'
+
 
     def pattern(self):
         """
         Creates a regex pattern based on a datetime string format
         :return: A regex compile of the assembled term
         """
-        re_list = [_re_map[f'%{char}'] for char in str(self.value).split('%') if char]
-        return re.compile(fr"({'.?'.join(re_list)})")
-
-    @classmethod
-    def find_format(cls, string):
-        """
-        Search function to fire a proper parser
-        :param string: Raw date string to match to a parser
-        :return: class:`xbrlassembler.DateParser` matching the string
-        """
-        for datetype in cls:
-            if re.search(datetype.pattern(), string):
-                return datetype
-
-    @classmethod
-    def make_date(cls, date_format, res):
-        return datetime.strptime(f"{res[1]}{res[2]}{res[3]}", date_format.value)
+        re_list = [_re_map[f'%{char}'] for char in self.value.split('%') if char]
+        return fr"({'.?'.join(re_list)})"
 
     @classmethod
     def parse(cls, string):
         """
-        Overarching parse function including all other functions
+        Attempts to parse a string into datetime objects
 
         :param string: Raw string that might include dates
         :return: Tuple of class:`datetime.datetime` objects found
@@ -95,6 +84,19 @@ class DateParser(Enum):
         for qtr, month_day in _quarter_map.items():
             string = string.replace(qtr, month_day)
 
-        date_format = cls.find_format(string)
-        if date_format:
-            return tuple(cls.make_date(date_format, res) for res in re.findall(date_format.pattern(), string))
+        format_map = {**{dt.pattern().replace('.?', ''): dt for dt in cls}, **{dt.pattern(): dt for dt in cls}}
+
+        date_regex, date_format = None, None
+        for r, d in format_map.items():
+            if re.search(r, string):
+                date_regex, date_format = r, d
+                break
+
+        if date_regex is None:
+            return
+
+        dates = []
+        for rex in re.findall(date_regex, string):
+            dates.append(datetime.strptime(f"{rex[1]}{rex[2]}{rex[3]}", date_format.value))
+
+        return tuple(sorted(dates))
