@@ -67,7 +67,7 @@ class DateParser(Enum):
         Creates a regex pattern based on a datetime string format
         :return: A regex compile of the assembled term
         """
-        re_list = [_re_map[f'%{char}'] for char in self.value.split('%') if char]
+        re_list = [_re_map[f'%{char}'] for char in str(self.value).split('%') if char]
         return fr"({'.?'.join(re_list)})"
 
     @classmethod
