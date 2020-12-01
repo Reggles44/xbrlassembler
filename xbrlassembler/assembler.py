@@ -252,34 +252,6 @@ class XBRLAssembler:
             raise XBRLError(f"Could not find all document from {info}")
 
     @classmethod
-    def from_sec_index(cls, index_url, ref_doc=XBRLType.PRE, *args, **kwargs):
-        """
-        Alternative constructor that takes a url as a string and attempts to pull and parse all relevent documents
-
-        :param index_url: A string for a url to an sec index
-        :param ref_doc: An class:`xbrlassembler.XBRLType` to specify the type of reference document
-
-        :return: A class:`xbrlassembler.XBRLAssembler`
-        """
-        if not index_url.startswith("https://www.sec.gov/Archives/edgar/data/"):
-            raise XBRLError(f"{index_url} is not a url for an SEC index")
-
-        index_soup = BeautifulSoup(requests.get(index_url).text, 'lxml')
-
-        data_files_table = index_soup.find('table', {'summary': 'Data Files'})
-
-        if not data_files_table:
-            raise XBRLError(f"{index_url} does not appear to have any data files")
-
-        file_map = {}
-        for row in data_files_table('tr')[1:]:
-            row = row.find_all('td')
-            soup = BeautifulSoup(requests.get("https://www.sec.gov" + row[2].find('a')['href']).text, 'lxml')
-            file_map[XBRLType.get(row[3].text)] = soup
-
-        return cls._mta(file_map=file_map, info=index_url, ref_doc=ref_doc, *args, **kwargs)
-
-    @classmethod
     def from_dir(cls, directory, ref_doc=XBRLType.PRE, *args, **kwargs):
         """
         Alternative constructor that will attempt to search the specific directory for a set of xbrl documents
@@ -295,7 +267,9 @@ class XBRLAssembler:
         file_map = {}
         for item in os.listdir(directory):
             if re.search(r'.*\.(xml|xsd)', item):
-                file_map[XBRLType.get(item)] = BeautifulSoup(open(os.path.join(directory, item), 'r'), 'lxml')
+                xbrl_type = XBRLType.get(item)
+                if xbrl_type:
+                    file_map[xbrl_type] = BeautifulSoup(open(os.path.join(directory, item), 'r'), 'lxml')
 
         return cls._mta(file_map=file_map, info=directory, ref_doc=ref_doc, *args, **kwargs)
 
