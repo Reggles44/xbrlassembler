@@ -5,7 +5,6 @@ import os
 import re
 from functools import lru_cache
 
-import requests
 from bs4 import BeautifulSoup
 
 from xbrlassembler.enums import XBRLType, FinancialStatement, DateParser
@@ -28,6 +27,7 @@ class XBRLElement:
         :param value: Data that sits on a specific point, mostly used for elements at the bottem of the tree
         :param ref: Reference data that gives context to the value
     """
+
     def __init__(self, uri, label=None, value=None, ref=None):
         """Constructor Method"""
         self.uri = uri.split("/")[-1]
@@ -205,6 +205,7 @@ class XBRLAssembler:
     """
     The main object to compile XBRL documents into complete sets of data by establishing a tree of information
     """
+
     def __init__(self, *args, **kwargs):
 
         self.args = args
@@ -309,6 +310,7 @@ class XBRLAssembler:
             for uri, header_ele in self.xbrl_elements.items():
                 def search_check(regex, ele):
                     return re.search(regex, ele.uri) or re.search(regex, ele.label)
+
                 fin_stmt = next((stmt for stmt in FinancialStatement if search_check(stmt.value, header_ele)), None)
                 if fin_stmt == FinancialStatement.NOTE:
                     continue
@@ -351,6 +353,7 @@ class XBRLAssembler:
         :param label_soup: A `BeautifulSoup` object
         :return:
         """
+
         def uri_search(raw):
             uri_re = re.compile(r'(?:lab_)?((us-gaap|source|dei|[a-z]{3,4})[_:][A-Za-z]{5,})', re.IGNORECASE)
             uris = re.search(uri_re, raw)
@@ -441,4 +444,5 @@ class XBRLAssembler:
 
         def doc_search(term, ele):
             return re.search(term, ele.uri) or re.search(term, ele.label)
+
         return next((ele for ele in search_data if doc_search(search_term, ele)), None)

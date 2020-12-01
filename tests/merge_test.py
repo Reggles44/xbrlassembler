@@ -1,29 +1,4 @@
-import urllib3
-from bs4 import BeautifulSoup
-
-from tests import assembler_test
-from xbrlassembler import XBRLAssembler, XBRLType
-
-http = urllib3.PoolManager(maxsize=10, block=True)
-
-
-def mkass(url):
-    file_map = {}
-
-    index_request = http.request('GET', url)
-    index_soup = BeautifulSoup(index_request.data, 'lxml')
-    data_files_table = index_soup.find('table', {'summary': 'Data Files'})
-    if data_files_table:
-
-        for row in data_files_table('tr')[1:]:
-            link = "https://www.sec.gov" + row.find_all('td')[2].find('a')['href']
-
-            xbrl_type = XBRLType.get(link.rsplit('/', 1)[1])
-            if xbrl_type:
-                xbrl_request = http.request('GET', link)
-                file_map[xbrl_type] = BeautifulSoup(xbrl_request.data, 'lxml')
-
-    return XBRLAssembler._mta(file_map=file_map, info=url, ref_doc=XBRLType.PRE)
+from tests import assembler_test, mkass
 
 
 def test_merge():

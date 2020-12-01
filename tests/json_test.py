@@ -1,6 +1,6 @@
 import os
 
-from tests import test_files_directory, assembler_test
+from tests import test_files_directory, assembler_test, mkass
 from xbrlassembler import XBRLAssembler
 
 
@@ -9,5 +9,5 @@ def test_json():
 
     json_file = os.path.join(test_files_directory, "test.json")
 
-    XBRLAssembler.from_sec_index(google_index).to_json(json_file)
+    mkass(google_index).to_json(json_file)
     assembler_test(XBRLAssembler.from_json(json_file))

@@ -47,9 +47,6 @@ _quarter_map = {'Q1': '0331',
                 'Q4': '1231'}
 
 
-
-
-
 class DateParser(Enum):
     """
     Functional enum that ties together regex with datetime format strings to
@@ -60,7 +57,6 @@ class DateParser(Enum):
     DAY_MONTH_HALF_YEAR = '%d%b%Y'
     YEAR_HALF_MONTH_DAY = '%y%m%d'
     MONTH_STRING_DAY_YEAR = '%b%d%Y'
-
 
     def pattern(self):
         """

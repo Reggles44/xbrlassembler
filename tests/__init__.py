@@ -4,9 +4,10 @@ import re
 from collections.abc import Iterable
 
 import requests
+import urllib3
 from bs4 import BeautifulSoup
 
-from xbrlassembler import XBRLElement, XBRLAssembler
+from xbrlassembler import XBRLElement, XBRLAssembler, XBRLType
 
 logging.basicConfig(level=logging.ERROR)
 logging.getLogger('xbrlassembler').setLevel(logging.DEBUG)
@@ -15,9 +16,30 @@ logging.getLogger('xbrlassembler').debug("Starting Test")
 test_files_directory = os.path.abspath(os.path.join(os.getcwd(), 'test files'))
 os.makedirs(test_files_directory, exist_ok=True)
 
+http = urllib3.PoolManager(maxsize=10, block=True)
+
+
+def mkass(url):
+    file_map = {}
+
+    index_request = http.request('GET', url)
+    index_soup = BeautifulSoup(index_request.data, 'lxml')
+    data_files_table = index_soup.find('table', {'summary': 'Data Files'})
+    if data_files_table:
+
+        for row in data_files_table('tr')[1:]:
+            link = "https://www.sec.gov" + row.find_all('td')[2].find('a')['href']
+
+            xbrl_type = XBRLType.get(link.rsplit('/', 1)[1])
+            if xbrl_type:
+                xbrl_request = http.request('GET', link)
+                file_map[xbrl_type] = BeautifulSoup(xbrl_request.data, 'lxml')
+
+    return XBRLAssembler._mta(file_map=file_map, info=url, ref_doc=XBRLType.PRE)
+
 
 def save_index(index_url):
-    id = index_url[index_url.rfind('/')+1:].replace("-index.htm", "")
+    id = index_url[index_url.rfind('/') + 1:].replace("-index.htm", "")
     directory = os.path.join(test_files_directory, id)
     os.makedirs(directory, exist_ok=True)
 
