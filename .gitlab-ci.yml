@@ -10,6 +10,7 @@ default:
     - apt-get update -qy
     - apt-get install -y $PACKAGES
     - python -m pip install -U -r requirements.txt
+    - python -m pip install -U bs4
     #- export PYTHONPATH="${PYTHONPATH}:./"
 
 pylint:
