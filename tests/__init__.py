@@ -35,7 +35,7 @@ def mkass(url):
                 xbrl_request = http.request('GET', link)
                 file_map[xbrl_type] = BeautifulSoup(xbrl_request.data, 'lxml')
 
-    return XBRLAssembler._mta(file_map=file_map, info=url, ref_doc=XBRLType.PRE)
+    return XBRLAssembler._init(file_map=file_map, ref_doc=XBRLType.PRE)
 
 
 def save_index(index_url):

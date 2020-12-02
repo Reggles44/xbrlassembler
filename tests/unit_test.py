@@ -1,5 +1,5 @@
 from tests import assembler_test, mkass
-from xbrlassembler import XBRLAssembler, FinancialStatement
+from xbrlassembler import FinancialStatement
 
 
 def test_assembler():

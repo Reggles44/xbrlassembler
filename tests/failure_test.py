@@ -48,4 +48,4 @@ def test_failure():
            XBRLType.DATA: file_map[XBRLType.DATA], XBRLType.PRE: "None"}
 
     for fm in [fm0, fm1, fm2, fm3, fm4]:
-        assert makes_exception(XBRLAssembler._mta, file_map=fm, info=None, ref_doc=XBRLType.PRE)
+        assert makes_exception(XBRLAssembler._init, file_map=fm, info=None, ref_doc=XBRLType.PRE)
