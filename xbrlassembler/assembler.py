@@ -211,7 +211,7 @@ class XBRLAssembler:
         self.xbrl_elements = {}
 
     def __repr__(self):
-        return self.xbrl_elements.items()
+        return self.xbrl_elements.__repr__()
 
     @classmethod
     def _init(cls, file_map, ref_doc):
@@ -318,8 +318,6 @@ class XBRLAssembler:
 
             if not isinstance(other, XBRLAssembler):
                 raise XBRLError(f"XBRLAssembler must merge with another XBRLAssembler not {type(other)}")
-
-            logger.debug(f"Merging {other}")
 
             for uri, header_ele in self.xbrl_elements.items():
                 def search_check(regex, ele):
@@ -443,13 +441,9 @@ class XBRLAssembler:
                 if ele.uri.lower() in cells:
                     possible_cells = cells[ele.uri.lower()]
 
-                    if all(cell.ref not in references for cell in possible_cells):
-                        cells = possible_cells
-                    else:
-                        cells = [cell for cell in possible_cells if cell.ref in references]
-
-                    for cell in cells:
-                        ele.add_child(cell)
+                    for cell in possible_cells:
+                        if cell.ref in references:
+                            ele.add_child(cell)
 
     def get(self, search) -> XBRLElement:
         """

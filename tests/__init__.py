@@ -72,3 +72,4 @@ def assembler_test(xbrl_assembler: XBRLAssembler):
         assert isinstance(ele.visualize(), str)
         assert isinstance(ele.ids(), dict)
         assert isinstance([x for x in ele.items()], list)
+    print(xbrl_assembler)

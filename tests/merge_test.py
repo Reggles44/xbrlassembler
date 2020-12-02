@@ -12,13 +12,7 @@ def test_merge():
 
     assemblers = [mkass(url) for url in urls]
 
-    main = assemblers[0].merge(*assemblers[1:])
-
-    for other in assemblers[1:]:
-        main.merge(other)
+    main = assemblers[0]
+    main.merge(*assemblers[1:])
 
     assembler_test(main)
-
-
-if __name__ == '__main__':
-    test_merge()

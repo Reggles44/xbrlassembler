@@ -7,7 +7,3 @@ def test_assembler():
 
     assembler = mkass(url)
     assembler_test(assembler)
-
-    print(assembler.cells["dei_EntityCommonStockSharesOutstanding".lower()])
-
-    print(assembler.get(FinancialStatement.DOCUMENT_INFORMATION).visualize())
