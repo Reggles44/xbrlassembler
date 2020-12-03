@@ -272,7 +272,7 @@ class XBRLAssembler:
         try:
             return cls._init(file_map=file_map, ref_doc=ref_doc)
         except KeyError as e:
-            raise XBRLError(f"Error creating XBRLAssembler from {directory}\n{e}")
+            raise XBRLError(f"Error creating XBRLAssembler from {directory} {e.__repr__()}")
 
     @classmethod
     def from_json(cls, file_path):
@@ -372,8 +372,11 @@ class XBRLAssembler:
 
         labels = {}
         for lab in label_soup.find_all(re.compile('label$', re.IGNORECASE)):
-            u = uri_search(lab['xlink:label']).lower()
-            labels[u if u != lab['xlink:label'] else uri_search(lab['id'])] = lab.text
+            try:
+                u = uri_search(lab['xlink:label']).lower()
+                labels[u if u != lab['xlink:label'] else uri_search(lab['id'])] = lab.text
+            except KeyError:
+                continue
 
         return labels
 
