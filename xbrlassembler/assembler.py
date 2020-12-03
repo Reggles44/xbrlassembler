@@ -271,8 +271,8 @@ class XBRLAssembler:
 
         try:
             return cls._init(file_map=file_map, ref_doc=ref_doc)
-        except KeyError:
-            raise XBRLError(f"Error creating XBRLAssembler from ({directory})")
+        except KeyError as e:
+            raise XBRLError(f"Error creating XBRLAssembler from {directory}\n{e}")
 
     @classmethod
     def from_json(cls, file_path):
