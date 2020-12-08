@@ -146,7 +146,7 @@ class XBRLElement:
         :return: A specific node from the tree
         """
         smap = {srch: str(self.__dict__[x]) for x, srch in kwargs.items() if x in self.__dict__ and srch is not None}
-        if all([bool(re.search(srch, str(v))) for srch, v in smap.items() if v is not None]):
+        if all((re.search(s, str(v) if v else '' if isinstance(s, re.Pattern) else s == v) for s, v in smap.items())):
             return self
 
         for child in self.children:
