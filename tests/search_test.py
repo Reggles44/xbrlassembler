@@ -10,5 +10,6 @@ def test_assembler():
     assembler = mkass(url)
 
     info = assembler.get(FinancialStatement.DOCUMENT_INFORMATION)
+    print(info.visualize())
     ticker = info.search(uri=re.compile('trading.?symbol'), value=re.compile(r'^[A-Z]{1,6}$'))
     assert ticker
