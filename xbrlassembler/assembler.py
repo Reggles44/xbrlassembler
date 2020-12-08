@@ -145,12 +145,9 @@ class XBRLElement:
         :param term: String, re.pattern, or anything that can go into a search
         :return: A specific node from the tree
         """
-        smap = self.__dict__
-        for x, v in kwargs.items():
-            if x in smap.keys() and v is not None:
-                if smap[x] is not None:
-                    if re.search(v, str(smap[x])):
-                        return self
+        smap = {srch: str(self.__dict__[x]) for x, srch in kwargs.items() if x in self.__dict__ and srch is not None}
+        if all([bool(re.search(srch, str(v))) for srch, v in smap.items() if v is not None]):
+            return self
 
         for child in self.children:
             child_search = child.search(**kwargs)
