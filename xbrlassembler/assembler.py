@@ -149,7 +149,7 @@ class XBRLElement:
         for x, v in kwargs.items():
             if x in smap.keys() and v is not None:
                 if smap[x] is not None:
-                    if re.search(v, smap[x]):
+                    if re.search(v, str(smap[x])):
                         return self
 
         for child in self.children:
