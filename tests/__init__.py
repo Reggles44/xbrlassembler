@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import time
 from collections.abc import Iterable
 
 import requests
@@ -34,6 +35,7 @@ def mkass(url):
             if xbrl_type:
                 xbrl_request = http.request('GET', link)
                 file_map[xbrl_type] = BeautifulSoup(xbrl_request.data, 'lxml')
+                time.sleep(1)
 
     return XBRLAssembler._init(file_map=file_map, ref_doc=XBRLType.PRE)
 
