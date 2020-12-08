@@ -139,19 +139,23 @@ class XBRLElement:
         return ids
 
     @lru_cache(maxsize=512)
-    def search(self, term) -> "XBRLElement":
+    def search(self, **kwargs) -> "XBRLElement":
         """
-        A search function to find specific node that has a uri or label that matches
+        A search function to find specific node that has a value that matches any of the kwargs
         :param term: String, re.pattern, or anything that can go into a search
         :return: A specific node from the tree
         """
-        if (re.search(term, self.uri) if self.uri else False) or (re.search(term, self.label) if self.label else False):
-            return self
-        else:
-            for child in self.children:
-                child_search = child.search(term)
-                if child_search:
-                    return child_search
+        smap = self.__dict__
+        for x, v in kwargs.items():
+            if x in smap.keys() and v is not None:
+                if smap[x] is not None:
+                    if re.search(v, smap[x]):
+                        return self
+
+        for child in self.children:
+            child_search = child.search(**kwargs)
+            if child_search:
+                return child_search
 
     @lru_cache(maxsize=512)
     def items(self):
@@ -333,7 +337,7 @@ class XBRLAssembler:
                     continue
 
                 for other_ele in other_doc.data():
-                    search_ele = header_ele.search(other_ele.uri)
+                    search_ele = header_ele.search(uri=other_ele.uri, label=other_ele.label)
                     if search_ele:
                         search_ele.merge(other_ele)
                     else:
