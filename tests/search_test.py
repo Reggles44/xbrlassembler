@@ -8,6 +8,7 @@ def test_assembler():
     url = "https://www.sec.gov/Archives/edgar/data/1084869/000143774920022923/0001437749-20-022923-index.htm"
 
     assembler = mkass(url)
+    assembler_test(assembler)
 
     info = assembler.get(FinancialStatement.DOCUMENT_INFORMATION)
     print(info.visualize())
