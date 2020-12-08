@@ -63,7 +63,7 @@ def save_index(index_url):
 def assembler_test(xbrl_assembler: XBRLAssembler):
     for uri, ele in xbrl_assembler.xbrl_elements.items():
         assert isinstance(ele, XBRLElement)
-        assert isinstance(ele.search(uri=re.compile('.')), XBRLElement)
+        assert isinstance(ele.search(uri=re.compile('.'), value=re.compile('.')), XBRLElement)
         assert isinstance(ele.head(), XBRLElement)
         assert isinstance(ele.items(), Iterable)
         assert isinstance(ele.to_json(), dict)
