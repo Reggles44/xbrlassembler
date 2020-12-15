@@ -33,9 +33,9 @@ def mkass(url):
 
             xbrl_type = XBRLType.get(link.rsplit('/', 1)[1])
             if xbrl_type:
+                time.sleep(1)
                 xbrl_request = http.request('GET', link)
                 file_map[xbrl_type] = BeautifulSoup(xbrl_request.data, 'lxml')
-                time.sleep(1)
 
     return XBRLAssembler._init(file_map=file_map, ref_doc=XBRLType.PRE)
 
