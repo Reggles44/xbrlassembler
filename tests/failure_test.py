@@ -29,7 +29,7 @@ def test_failure():
     google_index = "https://www.sec.gov/Archives/edgar/data/1652044/0001652044-20-000021-index.htm"
     google_assembler = mkass(google_index)
     google_assembler.merge(google_assembler)
-    assert makes_exception(google_assembler.merge, None)
+    google_assembler.merge(google_assembler, None)
     assert makes_exception(google_assembler.get, 1)
 
     index_soup = BeautifulSoup(requests.get(google_index).text, 'lxml')

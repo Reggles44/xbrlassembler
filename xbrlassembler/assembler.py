@@ -28,7 +28,7 @@ class XBRLElement:
         :param ref: Reference data that gives context to the value
     """
 
-    def __init__(self, uri, label=None, value=None, ref=None):
+    def __init__(self, uri, label='', value='', ref=''):
         """Constructor Method"""
         self.uri = uri.split("/")[-1]
         self.label = label
@@ -41,8 +41,7 @@ class XBRLElement:
         try:
             self.value = float(value)
         except (TypeError, ValueError):
-            if isinstance(value, str):
-                self.value = value.replace('\n', '')
+            self.value = value
 
         self.children = {}
         self.parent = None
@@ -76,8 +75,11 @@ class XBRLElement:
 
         for already_child in self.children:
             if already_child.uri == child.uri and already_child.ref == child.ref:
-                self.merge(child)
-                return
+                self.label = self.label or child.label
+                self.value = self.value or child.value
+
+                for new_child, order in child.children.items():
+                    already_child.add_child(new_child, order)
 
         try:
             order = int(float(order))
@@ -88,30 +90,13 @@ class XBRLElement:
         self.children[child] = order
         child.parent = self
 
-    def merge(self, other):
-        """
-        Attempts to merge one XBRLElement with another resulting in one element with more complete information
-        :param other: An `XBRLElement` to be absorbed
-        :return:
-        """
-        self.label = self.label or other.label
-        self.value = self.value or other.value
-        self.parent = self.parent or other.parent
-
-        for new_child, order in other.children.items():
-            self.add_child(new_child, order)
-
     @lru_cache(maxsize=512)
     def visualize(self) -> str:
         """
         A function to create a printable representation of the tree from this point
         :return: A multiline string
         """
-        vis = f"\n{self.__repr__()}"
-        if self.children:
-            for child in self.children:
-                vis += child.visualize().replace('\n', '\n\t')
-        return vis
+        return f"\n{self.__repr__()}" + ''.join(c.visualize().replace('\n', '\n\t') for c in self.children)
 
     @lru_cache(maxsize=512)
     def refs(self) -> dict:
@@ -119,8 +104,7 @@ class XBRLElement:
         A quick utility function to pull and parse all bottom level references in the tree
         :return: A dict mapping old references to parsed ones
         """
-        if self.date is None:
-            self.date = DateParser.parse(self.ref)
+        self.date = self.date or DateParser.parse(self.ref)
 
         ref_map = {self.ref: self.date}
         for child in self.children:
@@ -128,25 +112,21 @@ class XBRLElement:
         return ref_map
 
     @lru_cache(maxsize=512)
-    def ids(self) -> dict:
-        """
-        Recursive function to access all uri label pairs
-        :return: A dictionary where keys are uri strings and values are label strings or None is there is no label
-        """
-        ids = {self.uri: self.label}
-        for child in self.children:
-            ids.update(child.ids())
-        return ids
-
-    @lru_cache(maxsize=512)
     def search(self, **kwargs) -> "XBRLElement":
         """
         A search function to find specific node that has a value that matches any of the kwargs
-        :param term: String, re.pattern, or anything that can go into a search
-        :return: A specific node from the tree
+
+        .. highlight:: python
+        .. code-block:: python
+
+            ticker = entity_info.search(uri=re.compile('trading.?symbol', re.IGNORECASE),
+                                        value=re.compile(r'^[A-Z]{1,6}$'))
+
+        :param kwargs: Pass in search terms as kwargs which will be match by kw to `XBRLElement` values
+        :return: The first matching `XBRLElement`
         """
         smap = {srch: str(self.__dict__[x]) for x, srch in kwargs.items() if x in self.__dict__ and srch is not None}
-        if all((s.search(str(v) if v else '') if isinstance(s, re.Pattern) else s == v) for s, v in smap.items()):
+        if all((s.search(str(v)) if isinstance(s, re.Pattern) else s == v) for s, v in smap.items()):
             return self
 
         for child in self.children:
@@ -155,28 +135,27 @@ class XBRLElement:
                 return child_search
 
     @lru_cache(maxsize=512)
-    def items(self):
+    def findall(self, **kwargs):
         """
-        A recursive function iterator allowing access to loop over the entire dataset as a list
-        :return: Yields  Uri, Label, Ref, Value
-        """
-        yield self
-        for child in self.children.keys():
-            for ele in child.items():
-                yield ele
+        A search function to find specific node that has a value that matches any of the kwargs
 
-    @lru_cache(maxsize=512)
-    def data(self):
+        .. highlight:: python
+        .. code-block:: python
+
+            ticker = entity_info.search(uri=re.compile('trading.?symbol', re.IGNORECASE),
+                                        value=re.compile(r'^[A-Z]{1,6}$'))
+
+        :param kwargs: Pass in search terms as kwargs which will be match by kw to `XBRLElement` values
+        :return: Yields all matching `XBRLElement` from the tree
         """
-        A recursive function iterator returning all low level elements
-        :return: Yields XBRLElement
-        """
-        if all(child.value is not None and len(child.children) == 0 for child in self.children):
+        smap = {srch: str(self.__dict__[x]) for x, srch in kwargs.items() if x in self.__dict__ and srch is not None}
+        if all((s.search(str(v)) if isinstance(s, re.Pattern) else s == v) for s, v in smap.items()):
             yield self
 
-        for child in self.children.keys():
-            for ele in child.data():
-                yield ele
+        for child in self.children:
+            child_search = child.search(**kwargs)
+            if child_search:
+                yield child_search
 
     @lru_cache(maxsize=512)
     def to_json(self) -> dict:
@@ -314,32 +293,24 @@ class XBRLAssembler:
         :param others: One or many `XBRLAssemblers`
         """
         for other in others:
-            if other is self:
+            if other is self or not isinstance(other, XBRLAssembler):
                 continue
 
-            if not isinstance(other, XBRLAssembler):
-                raise XBRLError(f"XBRLAssembler must merge with another XBRLAssembler not {type(other)}")
+            def other_header_search(header):
+                for uri, oheader in other.xbrl_elements.items():
+                    found = header.search(uri=re.compile(oheader.uri.split('/')[-1], re.IGNORECASE),
+                                          label=re.compile(oheader.label, re.IGNORECASE))
+                    if found:
+                        return found
 
-            for uri, header_ele in self.xbrl_elements.items():
-                def search_check(regex, ele):
-                    return re.search(regex, ele.uri) or re.search(regex, ele.label)
-
-                fin_stmt = next((stmt for stmt in FinancialStatement if search_check(stmt.value, header_ele)), None)
-                if fin_stmt == FinancialStatement.NOTE:
-                    continue
-                other_doc = other.get(fin_stmt) if fin_stmt is not None else other.get(header_ele.uri)
-
-                if other_doc is None:
-                    logger.debug(f"Merge failed on document search {uri}")
-                    continue
-
-                for other_ele in other_doc.data():
-                    search_ele = header_ele.search(uri=other_ele.uri, label=other_ele.label)
-                    if search_ele:
-                        search_ele.merge(other_ele)
-                    else:
-                        logger.debug(f"Merge failed on element search "
-                                     f"(header_ele={header_ele.uri}, other_ele={other_ele})")
+            for uri, header in self.xbrl_elements.items():
+                other_header = other_header_search(header)
+                if other_header is not None:
+                    for oele in other_header.findall(value=re.compile('.*')):
+                        match = header.search(uri=re.compile(oele.uri))
+                        if match:
+                            if match.parent:
+                                match.parent.add_child(oele)
 
     def parse_schema(self, schema_soup):
         """
@@ -458,17 +429,11 @@ class XBRLAssembler:
 
         :return: class:`xbrlassembler.XBRLElement` for the top of a tree representing the requested document
         """
-        search_data = sorted(self.xbrl_elements.values(), key=lambda item: item.ref)
-
-        if isinstance(search, re.Pattern) or isinstance(search, str):
-            search_term = search
-        elif isinstance(search, FinancialStatement):
-            search_term = search.value
-        else:
+        try:
+            st = search.value if isinstance(search, FinancialStatement) else re.compile(search)
+        except TypeError:
             raise ValueError(f"XBRLAssembler.get() search term should be "
                              f"re.Pattern, string, or FinancialStatement not {search}")
 
-        def doc_search(term, ele):
-            return re.search(term, ele.uri) or re.search(term, ele.label)
-
-        return next((ele for ele in search_data if doc_search(search_term, ele)), None)
+        search_data = sorted(self.xbrl_elements.values(), key=lambda item: item.ref)
+        return next((ele for ele in search_data if st.search(ele.uri) or st.search(ele.label)), None)

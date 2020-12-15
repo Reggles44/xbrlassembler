@@ -63,15 +63,12 @@ def save_index(index_url):
 
 
 def assembler_test(xbrl_assembler: XBRLAssembler):
+    assert isinstance(xbrl_assembler.__repr__(), str)
     for uri, ele in xbrl_assembler.xbrl_elements.items():
         assert isinstance(ele, XBRLElement)
-        assert isinstance(ele.search(uri=re.compile('.'), value=re.compile('.')), XBRLElement)
+        assert isinstance(ele.search(value=re.compile('.*')), XBRLElement)
+        assert all(isinstance(ele, XBRLElement) for ele in ele.findall(value=re.compile('.*')))
         assert isinstance(ele.head(), XBRLElement)
-        assert isinstance(ele.items(), Iterable)
         assert isinstance(ele.to_json(), dict)
-        assert isinstance(ele.ids(), dict)
         assert isinstance(ele.refs(), Iterable)
         assert isinstance(ele.visualize(), str)
-        assert isinstance(ele.ids(), dict)
-        assert isinstance([x for x in ele.items()], list)
-    print(xbrl_assembler)
