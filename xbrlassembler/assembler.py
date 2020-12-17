@@ -121,6 +121,7 @@ class XBRLElement:
 
             ticker = entity_info.search(uri=re.compile('trading.?symbol', re.IGNORECASE),
                                         value=re.compile(r'^[A-Z]{1,6}$'))
+            ticker = entity_info.search(uri="FooBar")
 
         :param kwargs: Pass in search terms as kwargs which will be match by kw to `XBRLElement` values
         :return: The first matching `XBRLElement`
