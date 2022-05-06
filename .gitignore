@@ -4,7 +4,7 @@
 /.coverage
 /tests/parse_success.csv
 /docs/build/
-/tests/test files/*
+/tests/resource_dir/*
 /test files/*
 /tests/test.json
 /tests/.coverage

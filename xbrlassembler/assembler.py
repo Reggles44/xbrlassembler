@@ -3,12 +3,13 @@ import json
 import logging
 import os
 import re
+from copy import copy
 from functools import lru_cache
 
 from bs4 import BeautifulSoup
 
 from xbrlassembler.enums import XBRLType, FinancialStatement, DateParser
-from xbrlassembler.error import XBRLError
+from xbrlassembler.error import XBRLError, XBRLAssemblerFromDirectoryError
 
 logger = logging.getLogger('xbrlassembler')
 
@@ -60,26 +61,26 @@ class XBRLElement:
         """
         return self if self.parent is None else self.parent.head()
 
-    def add_child(self, child, order=-1):
+    def add_child(self, new_child, order=-1):
         """
         Essential function for establishing relationships between elements.
         This function ensures that the relationship is set on both parent and child
         elements without duplication or Nones
 
         Args:
-            :param child: An XBRLElement that is going to be under this element in the tree
+            :param new_child: An XBRLElement that is going to be under this element in the tree
             :param order: An optional argument to add order to child elements
         """
-        if not isinstance(child, XBRLElement):
+        if not isinstance(new_child, XBRLElement):
             return
 
-        for already_child in self.children:
-            if already_child.uri == child.uri and already_child.ref == child.ref:
-                self.label = self.label or child.label
-                self.value = self.value or child.value
+        for child in self.children:
+            if child.uri == new_child.uri and child.ref == new_child.ref:
+                self.label = self.label or new_child.label
+                self.value = self.value or new_child.value
 
-                for new_child, order in child.children.items():
-                    already_child.add_child(new_child, order)
+                for new_child, order in copy(new_child.children).items():
+                    child.add_child(new_child, order)
 
         try:
             order = int(float(order))
@@ -87,8 +88,8 @@ class XBRLElement:
             logger.info(f"order to float to int failed {order}, {e}")
             return
 
-        self.children[child] = order
-        child.parent = self
+        self.children[new_child] = order
+        new_child.parent = self
 
     @lru_cache(maxsize=512)
     def visualize(self) -> str:
@@ -112,49 +113,66 @@ class XBRLElement:
         return ref_map
 
     @lru_cache(maxsize=512)
-    def search(self, **kwargs) -> "XBRLElement":
+    def find(self, **kwargs) -> "XBRLElement":
         """
-        A search function to find specific node that has a value that matches any of the kwargs
+        A find function to find specific node that has a value that matches any of the kwargs
 
         .. highlight:: python
         .. code-block:: python
 
-            ticker = entity_info.search(uri=re.compile('trading.?symbol', re.IGNORECASE),
+            ticker = entity_info.find(uri=re.compile('trading.?symbol', re.IGNORECASE),
                                         value=re.compile(r'^[A-Z]{1,6}$'))
-            ticker = entity_info.search(uri="FooBar")
+            ticker = entity_info.find(uri="FooBar")
 
-        :param kwargs: Pass in search terms as kwargs which will be match by kw to `XBRLElement` values
+        :param kwargs: Pass in find terms as kwargs which will be match by kw to `XBRLElement` values
         :return: The first matching `XBRLElement`
         """
+        print(kwargs)
+        def match(value, srch):
+            print(f'checking {value} to {srch}')
+            if callable(srch):
+                return srch(value)
+            elif isinstance(srch, re.Pattern):
+                return srch.search(value)
+            return srch == value
+
         smap = {srch: str(self.__dict__[x]) for x, srch in kwargs.items() if x in self.__dict__ and srch is not None}
-        if all((s.search(str(v)) if isinstance(s, re.Pattern) else s == v) for s, v in smap.items()):
+        if all(match(v, s) for s, v in smap.items()):
             return self
 
         for child in self.children:
-            child_search = child.search(**kwargs)
+            child_search = child.find(**kwargs)
             if child_search:
                 return child_search
 
     @lru_cache(maxsize=512)
     def findall(self, **kwargs):
         """
-        A search function to find specific node that has a value that matches any of the kwargs
+        A find function to find specific node that has a value that matches any of the kwargs
 
         .. highlight:: python
         .. code-block:: python
 
-            ticker = entity_info.search(uri=re.compile('trading.?symbol', re.IGNORECASE),
+            ticker = entity_info.find(uri=re.compile('trading.?symbol', re.IGNORECASE),
                                         value=re.compile(r'^[A-Z]{1,6}$'))
 
         :param kwargs: Pass in search terms as kwargs which will be match by kw to `XBRLElement` values
         :return: Yields all matching `XBRLElement` from the tree
         """
-        smap = {srch: str(self.__dict__[x]) for x, srch in kwargs.items() if x in self.__dict__ and srch is not None}
-        if all((s.search(str(v)) if isinstance(s, re.Pattern) else s == v) for s, v in smap.items()):
+        print(kwargs)
+        def match(value, srch):
+            print(f'checking {value} to {srch}')
+            if callable(srch):
+                return srch(value)
+            elif isinstance(srch, re.Pattern):
+                return srch.search(value)
+            return srch == value
+
+        if all(match(str(self.__dict__[x]), srch) for x, srch in kwargs.items() if x in self.__dict__):
             yield self
 
-        for child in self.children:
-            child_search = child.search(**kwargs)
+        for child in copy(self.children):
+            child_search = child.find(**kwargs)
             if child_search:
                 yield child_search
 
@@ -187,48 +205,8 @@ class XBRLAssembler:
     XBRLAssembler is a data object that is comprised of a map of trees which represent various financial statements.
     The primary functionality of this class is for loading and saving data, but also selecting specific data trees.
     """
-
     def __init__(self):
         self.xbrl_elements = {}
-
-    def __repr__(self):
-        return self.xbrl_elements.__repr__()
-
-    @classmethod
-    def _init(cls, file_map, ref_doc):
-        """
-        Protected method to turn semi-organized xbrl data into a XBRLAssembler object.
-        This is required as the from_json constructor will populate the object without
-        needing any parsing so parsing can't happen in the __init__ function.
-
-        :param file_map: A dict of `XBRLType` and `BeautifulSoup` objects
-        :param ref_doc: A `XBRLType` to specify the reference document to use
-        :return: A complete `XBRLAssembler` with compiled data
-        """
-        schema = file_map[XBRLType.SCHEMA]
-        if not isinstance(schema, BeautifulSoup):
-            raise XBRLError(f"XBRLAssembler schema requires a BeautifulSoup not {schema}")
-
-        label = file_map[XBRLType.LABEL]
-        if not isinstance(label, BeautifulSoup):
-            raise XBRLError(f"XBRLAssembler label requires a BeautifulSoup not {label}")
-
-        cell = file_map[XBRLType.DATA]
-        if not isinstance(cell, BeautifulSoup):
-            raise XBRLError(f"XBRLAssembler cell requires a BeautifulSoup not {cell}")
-
-        ref_type = next(ref for ref in {ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC} if ref in file_map)
-        ref = file_map[ref_type]
-        if not isinstance(ref, BeautifulSoup):
-            raise XBRLError(f"XBRLAssembler ref requires a BeautifulSoup not {ref}")
-
-        assembler = cls()
-        assembler.parse_schema(schema)
-        assembler.parse_ref(labels=assembler.parse_labels(label),
-                            cells=assembler.parse_cells(cell),
-                            ref_soup=ref)
-
-        return assembler
 
     @classmethod
     def from_dir(cls, directory, ref_doc=XBRLType.PRE):
@@ -251,9 +229,24 @@ class XBRLAssembler:
                     file_map[xbrl_type] = BeautifulSoup(open(os.path.join(directory, item), 'r'), 'lxml')
 
         try:
-            return cls._init(file_map=file_map, ref_doc=ref_doc)
-        except KeyError as e:
-            raise XBRLError(f"Error creating XBRLAssembler from {directory} {e.__repr__()}")
+            schema = file_map[XBRLType.SCHEMA]
+            label = file_map[XBRLType.LABEL]
+            cell = file_map[XBRLType.DATA]
+
+            ref_type = next(ref for ref in {ref_doc, XBRLType.PRE, XBRLType.DEF, XBRLType.CALC} if ref in file_map)
+            ref = file_map[ref_type]
+
+            assembler = cls()
+            assembler.parse_schema(schema)
+            assembler.parse_ref(
+                labels=assembler.parse_labels(label),
+                cells=assembler.parse_cells(cell),
+                ref_soup=ref
+            )
+
+            return assembler
+        except Exception as e:
+            raise XBRLAssemblerFromDirectoryError(f"Error creating XBRLAssembler from {directory} {e.__repr__()}")
 
     @classmethod
     def from_json(cls, file_path):
@@ -264,17 +257,16 @@ class XBRLAssembler:
         :param file_path: A string file path
         :return: A `XBRLAssembler`
         """
-        if not isinstance(file_path, str):
-            raise TypeError(f"XBRLAssembler.from_json needs a file_path string not {file_path}")
+        try:
+            with open(file_path, 'r') as file:
+                data_dict = {uri: XBRLElement.from_json(ele) for uri, ele in json.load(file).items()}
 
-        xbrl_assembler = cls()
+            xbrl_assembler = cls()
+            xbrl_assembler.xbrl_elements.update(data_dict)
 
-        with open(file_path, 'r') as file:
-            data_dict = {uri: XBRLElement.from_json(ele) for uri, ele in json.load(file).items()}
-
-        xbrl_assembler.xbrl_elements.update(data_dict)
-
-        return xbrl_assembler
+            return xbrl_assembler
+        except Exception as e:
+            raise XBRLAssemblerFromDirectoryError(f"Error creating XBRLAssembler from {file_path} {e.__repr__()}")
 
     def to_json(self, file_path, mode='w+'):
         """
@@ -299,7 +291,7 @@ class XBRLAssembler:
 
             def other_header_search(header):
                 for uri, oheader in other.xbrl_elements.items():
-                    found = header.search(uri=re.compile(oheader.uri.split('/')[-1], re.IGNORECASE),
+                    found = header.find(uri=re.compile(oheader.uri.split('/')[-1], re.IGNORECASE),
                                           label=re.compile(oheader.label, re.IGNORECASE))
                     if found:
                         return found
@@ -308,7 +300,7 @@ class XBRLAssembler:
                 other_header = other_header_search(header)
                 if other_header is not None:
                     for oele in other_header.findall(value=re.compile('.*')):
-                        match = header.search(uri=re.compile(oele.uri))
+                        match = header.find(uri=re.compile(oele.uri))
                         if match:
                             if match.parent:
                                 match.parent.add_child(oele)
@@ -403,7 +395,7 @@ class XBRLAssembler:
             # Find and create parent/child relationships between new elements
             for arc in def_link.find_all(re.compile(r'\w*arc', re.IGNORECASE)):
                 parent, child, order = eles[arc['xlink:from']], eles[arc['xlink:to']], arc['order']
-                parent.add_child(child=child, order=order)
+                parent.add_child(new_child=child, order=order)
 
             # Clean out incorrect refences
             most_used = max(references.values())
@@ -412,7 +404,7 @@ class XBRLAssembler:
             # Determine top and bottom level elements in the document (put under header or fill in cells)
             for order, ele in enumerate(eles.values()):
                 if ele.parent is None:
-                    doc_ele.add_child(child=ele, order=order)
+                    doc_ele.add_child(new_child=ele, order=order)
 
                 if ele.uri.lower() in cells:
                     possible_cells = cells[ele.uri.lower()]
@@ -437,4 +429,10 @@ class XBRLAssembler:
                              f"re.Pattern, string, or FinancialStatement not {search}")
 
         search_data = sorted(self.xbrl_elements.values(), key=lambda item: item.ref)
-        return next((ele for ele in search_data if st.search(ele.uri) or st.search(ele.label)), None)
+        return next((ele for ele in search_data if st.find(ele.uri) or st.find(ele.label)), None)
+
+    def find(self, **kwargs):
+        for element in self.xbrl_elements.values():
+            found = element.find(**kwargs)
+            if found:
+                return found
