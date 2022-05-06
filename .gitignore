@@ -2,9 +2,6 @@
 /venv/
 .pytest_cache
 /.coverage
-/tests/parse_success.csv
 /docs/build/
 /tests/resource_dir/*
-/test files/*
-/tests/test.json
-/tests/.coverage
+MANIFEST

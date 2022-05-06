@@ -1,16 +1,11 @@
-import setuptools
+from distutils.core import setup
 
-with open("README.rst", "r") as fh:
-    long_description = fh.read()
-
-setuptools.setup(
+setup(
     name="XBRLAssembler",
     version="0.13.1",
     author="Reggles",
     author_email="reginaldbeakes@gmail.com",
     description="An assembler for XBRL Documents into pandas",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
     url="https://gitlab.com/Reggles44/xbrlassembler",
     include_package_data=True,
     packages=['xbrlassembler'],
