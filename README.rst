@@ -1,12 +1,11 @@
 XBRL Assembler
 ==============
-.. image:: https://gitlab.com/Reggles44/xbrlassembler/badges/master/pipeline.svg
-    :alt: pipeline status
-    :target: https://gitlab.com/Reggles44/xbrlassembler/-/commits/master
+.. image:: https://github.com/Reggles44/xbrl-assembler/actions/workflows/test/badge.svg
+    :target: https://github.com/Reggles44/xbrl-assembler/actions?query=workflow%3Atest
 
-.. image:: https://gitlab.com/Reggles44/xbrlassembler/badges/master/coverage.svg
-    :alt: coverage report
-    :target: https://gitlab.com/Reggles44/xbrlassembler/-/commits/master
+.. image:: https://codecov.io/gh/Reggles44/xbrl-assembler/branch/main/graph/badge.svg?token=2YNUXL23DF
+    :target: https://codecov.io/gh/Reggles44/xbrl-assembler
+
 
 .. image:: https://readthedocs.org/projects/xbrlassembler/badge/?version=latest
     :alt: Documentation Status
