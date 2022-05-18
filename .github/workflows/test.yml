@@ -20,19 +20,21 @@ permissions: {}
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-      strategy:
-        matrix:
-          name: [
-            "ubuntu-py39",
-          ]
-          include:
-            - name: "ubuntu-py39"
-              python: "3.9"
-              os: ubuntu-latest
-              tox_env: "py39-xdist"
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     permissions:
       contents: read
+
+    strategy:
+      matrix:
+        name: [
+          "ubuntu-py39",
+        ]
+        include:
+          - name: "ubuntu-py39"
+            python: "3.9"
+            os: ubuntu-latest
+            tox_env: "py39-xdist"
 
     steps:
       - name: Set up Python ${{ matrix.python-version }}
