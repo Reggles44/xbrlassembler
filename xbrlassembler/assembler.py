@@ -319,7 +319,6 @@ class XBRLAssembler:
             for key in matching_keys:
                 for element in other_xbrl_type_map[key].iter():
                     match = xbrl_type_map[key].find(uri=element.uri)
-                    print(match)
                     if match and match.parent:
                         match.parent.add_child(element)
 
