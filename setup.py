@@ -8,7 +8,7 @@ setup(
     description="An assembler for XBRL Documents into pandas",
     url="https://gitlab.com/Reggles44/xbrlassembler",
     include_package_data=True,
-    packages=['xbrlassembler'],
+    packages=['xbrl-assembler'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",

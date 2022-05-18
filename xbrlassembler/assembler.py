@@ -13,7 +13,7 @@ from xbrlassembler.enums import XBRLType, FinancialStatement
 from xbrlassembler.error import XBRLAssemblerFromDirectoryError
 from xbrlassembler.utils import parse_datetime
 
-logger = logging.getLogger('xbrlassembler')
+logger = logging.getLogger('xbrl-assembler')
 
 
 class XBRLElement:
@@ -225,9 +225,9 @@ class XBRLAssembler:
         Create a new XBRLAssembler from raw XBRL files.
 
         :param file_dict: A `dict` with file names as keys and either file paths, `TextIOWrapper`,
-        :param ref_doc: Optional class`xbrlassembler.XBRLType` used to specify the requested reference document
+        :param ref_doc: Optional class`xbrl-assembler.XBRLType` used to specify the requested reference document
 
-        :return: A class:`xbrlassembler.XBRLAssembler`
+        :return: A class:`xbrl-assembler.XBRLAssembler`
         """
         if all(isinstance(v, str) and os.path.isfile(v) for v in file_dict.values()):
             file_dict = {file_name: BeautifulSoup(open(file_path, 'r'), 'lxml') for file_name, file_path in file_dict.items()}
@@ -267,9 +267,9 @@ class XBRLAssembler:
         Alternative constructor that will attempt to search the specific directory for a set of xbrl documents
 
         :param path: A string to a directory that will be scanned for xbrl documents
-        :param ref_doc: Optional class`xbrlassembler.XBRLType` used to specify the requested reference document
+        :param ref_doc: Optional class`xbrl-assembler.XBRLType` used to specify the requested reference document
 
-        :return: A class:`xbrlassembler.XBRLAssembler`
+        :return: A class:`xbrl-assembler.XBRLAssembler`
         """
         file_map = {}
         for item in os.listdir(path):
@@ -437,7 +437,7 @@ class XBRLAssembler:
 
         :param search: Regex, string, or FinancialStatement enum to search with
 
-        :return: class:`xbrlassembler.XBRLElement` for the top of a tree representing the requested document
+        :return: class:`xbrl-assembler.XBRLElement` for the top of a tree representing the requested document
         """
 
         if isinstance(item, FinancialStatement):
