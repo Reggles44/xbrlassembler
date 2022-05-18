@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from typing import Iterable
@@ -12,7 +13,9 @@ from xbrlassembler import XBRLAssembler, XBRLElement, FinancialStatement
 BASE_XBRL_URL = 'https://www.sec.gov/Archives/edgar/data/1781983/0001558370-20-006741-index.htm'
 
 
-def assembler_test(xbrl_assembler: XBRLAssembler):
+def test_xbrl_assembler():
+    xbrl_assembler = XBRLAssembler.parse_dir(XBRL_RESOURCE_FILES)
+
     assert isinstance(xbrl_assembler.__repr__(), str)
     for uri, ele in xbrl_assembler.xbrl_elements.items():
         assert isinstance(ele, XBRLElement)
@@ -21,18 +24,29 @@ def assembler_test(xbrl_assembler: XBRLAssembler):
         assert isinstance(ele.head(), XBRLElement)
         assert isinstance(ele.to_json(), dict)
         assert isinstance(ele.refs(), Iterable)
+        assert isinstance(ele.iter(), Iterable)
         assert isinstance(ele.visualize(), str)
 
+    income_statement = xbrl_assembler.get(FinancialStatement.INCOME_STATEMENT)
+    assert income_statement.find()
+    for sub_ele in income_statement.findall():
+        assert isinstance(sub_ele, XBRLElement)
 
-def test_xbrl_assembler():
-    assembler = XBRLAssembler.from_dir(XBRL_RESOURCE_FILES)
-    assembler_test(assembler)
-    assert assembler.find(uri=re.compile('us-gaap_cash', re.IGNORECASE))
+    for sub_ele in income_statement.findall(uri=re.compile('cash')):
+        assert isinstance(sub_ele, XBRLElement)
+
+
+def test_json():
+    with open(os.path.join(RESOURCE_DIR, "test.json"), 'w') as json_file:
+        json.dump(XBRLAssembler.parse_dir(XBRL_RESOURCE_FILES).to_json(), json_file)
+
+    with open(os.path.join(RESOURCE_DIR, "test.json"), 'r') as json_file:
+        XBRLAssembler.from_json(json.load(json_file))
 
 
 @pytest.mark.parametrize('dir', ('Inavlid Dir', None))
 def test_invalid_dir(dir):
-    assert makes_exception(XBRLAssembler.from_dir, dir)
+    assert makes_exception(XBRLAssembler.parse_dir, dir)
 
 
 def test_invalid_json():
@@ -48,15 +62,9 @@ def test_merge():
             "https://www.sec.gov/Archives/edgar/data/1084869/0001437749-20-009975-index.htm",
             "https://www.sec.gov/Archives/edgar/data/1084869/0001437749-19-002107-index.htm"]
 
-    assemblers = [fetch_resource_files(url, os.path.join(RESOURCE_DIR, 'merge', str(i))) for i, url in enumerate(urls, 1)]
+    assemblers = []
+    for i, url in enumerate(urls, 1):
+        assemblers.append(fetch_resource_files(url, os.path.join(RESOURCE_DIR, 'merge', str(i))))
 
     main = assemblers[0]
     main.merge(*assemblers[1:])
-
-    assembler_test(main)
-
-
-def test_json():
-    json_file = os.path.join(RESOURCE_DIR, "test.json")
-    XBRLAssembler.from_dir(XBRL_RESOURCE_FILES).to_json(json_file)
-    assembler_test(XBRLAssembler.from_json(json_file))

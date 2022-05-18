@@ -5,8 +5,6 @@ from bs4 import BeautifulSoup
 
 from xbrlassembler import XBRLAssembler
 
-logger = logging.getLogger()
-
 RESOURCE_DIR = os.path.join(os.getcwd(), 'resource_dir')
 os.makedirs(RESOURCE_DIR, exist_ok=True)
 
@@ -23,7 +21,6 @@ def makes_exception(func,  *args, **kwargs):
 
 
 def get(url):
-    logger.debug(url)
     response = requests.get(url, headers={'User-Agent': 'Company Name myname@company.com'})
     response.raise_for_status()
     return response
@@ -54,4 +51,4 @@ def fetch_resource_files(index_url, dir=XBRL_RESOURCE_FILES):
 
         open(file_path, 'wb+').write(file.content)
 
-    return XBRLAssembler.from_dir(dir)
+    return XBRLAssembler.parse_dir(dir)
