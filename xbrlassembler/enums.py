@@ -1,45 +1,4 @@
-import re
-from datetime import datetime
 from enum import Enum
-
-
-class FinancialStatement(Enum):
-    """A wrapper enum for common and tested regex to find specific documents"""
-    INCOME_STATEMENT = (
-        'operation',
-        'income',
-        'earnings',
-        'revenues',
-        'loss'
-    )
-    BALANCE_SHEET = (
-        'balance',
-        'condition',
-        'position',
-        'assets'
-    )
-    DOCUMENT_INFORMATION = (
-        'information',
-    )
-    STOCK_HOLDER = (
-        'stockholder',
-    )
-    CASH_FLOW = (
-        'cash.flow',
-    )
-    NOTE = (
-        'statement.note',
-    )
-    INVALID = ()
-
-    @classmethod
-    def _missing_(cls, value: object):
-        if isinstance(value, str):
-            value = value.lower()
-            for stmt in cls:
-                if any(re.search(kw, value) for kw in stmt.value):
-                    return stmt
-        return cls.INVALID
 
 
 class XBRLType(Enum):
